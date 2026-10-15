@@ -30,8 +30,10 @@ export function ModeratorSimulator({
   onRival,
   onReset,
 }: ModeratorSimulatorProps) {
-  const isOpen = state.phase === "open";
-  const isWaiting = state.phase === "waiting";
+  const phase = state.phase;
+  const canStart = phase === "waiting" || phase === "locked";
+  const canRival = phase === "open";
+  const canReset = phase !== "waiting";
 
   return (
     <section
@@ -54,7 +56,7 @@ export function ModeratorSimulator({
         <Button
           type="button"
           onClick={onStart}
-          disabled={isOpen}
+          disabled={!canStart}
           className="w-full"
         >
           <Play aria-hidden />
@@ -64,7 +66,7 @@ export function ModeratorSimulator({
           type="button"
           variant="secondary"
           onClick={onRival}
-          disabled={!isOpen}
+          disabled={!canRival}
           className="w-full"
         >
           <Siren aria-hidden />
@@ -74,7 +76,7 @@ export function ModeratorSimulator({
           type="button"
           variant="outline"
           onClick={onReset}
-          disabled={isWaiting}
+          disabled={!canReset}
           className="w-full"
         >
           <RotateCcw aria-hidden />

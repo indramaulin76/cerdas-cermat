@@ -33,11 +33,12 @@ export type Session = {
 
 /**
  * Fase tombol jawab regu.
- * - `waiting` — layar siap menunggu, moderator belum membuka soal.
- * - `open`    — soal dibuka, tombol aktif dan cooldown berjalan.
- * - `locked`  — tombol terkunci otomatis (sudah ada yang menjawab / waktu habis).
+ * - `waiting`   — layar siap menunggu, moderator belum membuka soal.
+ * - `countdown` — aba-aba: hitungan mundur sebelum tombol aktif (adil & serentak).
+ * - `open`      — soal dibuka, tombol aktif dan cooldown berjalan.
+ * - `locked`    — tombol terkunci otomatis (sudah ada yang menjawab / waktu habis).
  */
-export type BuzzerPhase = "waiting" | "open" | "locked";
+export type BuzzerPhase = "waiting" | "countdown" | "open" | "locked";
 
 /** Alasan tombol terkunci. */
 export type BuzzerLockReason =
@@ -61,9 +62,14 @@ export type BuzzerState = {
   phase: BuzzerPhase;
   /** Timestamp monotonik (`performance.now`) saat soal dibuka. */
   openedAt: number | null;
+  /** Timestamp monotonik saat aba-aba selesai & tombol mulai aktif. */
+  armAt: number | null;
   /** Timestamp monotonik saat cooldown berakhir. */
   deadlineAt: number | null;
-  /** Sisa waktu cooldown (milidetik) saat fase `open`. */
+  /**
+   * Sisa waktu (milidetik): sisa aba-aba saat `countdown`,
+   * atau sisa cooldown saat `open`.
+   */
   remainingMs: number;
   /** Reaksi regu ini saat menekan (milidetik), bila ia yang menekan. */
   reactionMs: number | null;

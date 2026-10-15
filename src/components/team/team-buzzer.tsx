@@ -3,13 +3,11 @@
 /**
  * Halaman tombol jawab regu (versi data tiruan).
  *
- * Menampilkan layar "siap menunggu", tombol jawab besar, dan status terkunci
- * otomatis. Seluruh state lomba masih ditirukan secara lokal lewat
+ * Menampilkan layar "siap menunggu", aba-aba, tombol jawab besar, dan status
+ * terkunci otomatis. Seluruh state lomba masih ditirukan secara lokal lewat
  * `useTeamBuzzer`; kontraknya sudah disamakan dengan API real-time yang akan
  * menyusul, sehingga UI tidak perlu berubah saat backend tersedia.
  */
-
-import { Trophy, Zap } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { useTeamBuzzer } from "@/hooks/use-team-buzzer";
@@ -18,6 +16,7 @@ import {
   AnswerButton,
   type AnswerButtonVisual,
 } from "@/components/team/answer-button";
+import { BuzzerStatus } from "@/components/team/buzzer-status";
 import { ModeratorSimulator } from "@/components/team/moderator-simulator";
 import { cn } from "cn";
 
@@ -28,12 +27,16 @@ type TeamBuzzerProps = {
 };
 
 const PHASE_BADGE: Record<
-  BuzzerLockReason | "waiting" | "open",
+  "waiting" | "countdown" | "open" | BuzzerLockReason,
   { label: string; className: string }
 > = {
   waiting: {
     label: "Siap",
     className: "border-border/70 bg-muted text-muted-foreground",
+  },
+  countdown: {
+    label: "Aba-aba",
+    className: "border-transparent bg-sky-500/15 text-sky-300",
   },
   open: {
     label: "Soal dibuka",
@@ -60,49 +63,61 @@ export function TeamBuzzer({ session, team, rival }: TeamBuzzerProps) {
     session.cooldownSeconds,
   );
 
-  const isOpen = state.phase === "open";
+  const phase = state.phase;
+  const isOpen = phase === "open";
+  const isCountdown = phase === "countdown";
   const lockedBySelf = state.lockReason === "self";
   const lockedByRival = state.lockReason === "rival";
   const timedOut = state.lockReason === "timeout";
 
-  const remainingSeconds = Math.ceil(state.remainingMs / 1000);
-  const cooldownProgress = isOpen
-    ? Math.max(0, Math.min(1, state.remainingMs / (session.cooldownSeconds * 1000)))
-    : 0;
-
-  const phaseKey = state.phase === "open" ? "open" : state.phase === "waiting" ? "waiting" : state.lockReason ?? "waiting";
+  const phaseKey: "waiting" | "countdown" | "open" | BuzzerLockReason =
+    phase === "countdown"
+      ? "countdown"
+      : phase === "open"
+        ? "open"
+        : phase === "waiting"
+          ? "waiting"
+          : state.lockReason ?? "waiting";
   const badge = PHASE_BADGE[phaseKey];
 
   // Petakan state lomba ke tampilan tombol jawab.
   const buttonVisual: AnswerButtonVisual = isOpen
     ? "armed"
-    : lockedBySelf
-      ? "won"
-      : lockedByRival
-        ? "locked"
-        : timedOut
-          ? "timeout"
-          : "waiting";
+    : isCountdown
+      ? "ready"
+      : lockedBySelf
+        ? "won"
+        : lockedByRival
+          ? "locked"
+          : timedOut
+            ? "timeout"
+            : "waiting";
 
   const label = isOpen
     ? "TEKAN!"
-    : lockedBySelf
-      ? "KAMU DULUAN!"
-      : lockedByRival
-        ? "TERKUNCI"
-        : timedOut
-          ? "WAKTU HABIS"
-          : "SIAP MENUNGGU";
+    : isCountdown
+      ? "BERSIAP"
+      : lockedBySelf
+        ? "KAMU DULUAN!"
+        : lockedByRival
+          ? "TERKUNCI"
+          : timedOut
+            ? "WAKTU HABIS"
+            : "SIAP MENUNGGU";
 
   const sublabel = isOpen
     ? "Jawab sekarang — siapa cepat, dia dapat"
-    : lockedBySelf
-      ? `Reaksi ${state.reactionMs ?? 0} ms`
-      : lockedByRival
-        ? `${state.winner?.name ?? rival.name} lebih cepat · ${state.winner?.reactionMs ?? 0} ms`
-        : timedOut
-          ? "Tidak ada regu yang menekan"
-          : "Menunggu moderator membuka soal";
+    : isCountdown
+      ? "Aba-aba sebentar lagi"
+      : lockedBySelf
+        ? `Reaksi ${state.reactionMs ?? 0} ms`
+        : lockedByRival
+          ? `${state.winner?.name ?? rival.name} lebih cepat · ${state.winner?.reactionMs ?? 0} ms`
+          : timedOut
+            ? "Tidak ada regu yang menekan"
+            : "Menunggu moderator membuka soal";
+
+  const live = isCountdown || isOpen;
 
   return (
     <main className="relative flex min-h-dvh flex-col overflow-hidden bg-background text-foreground">
@@ -123,7 +138,7 @@ export function TeamBuzzer({ session, team, rival }: TeamBuzzerProps) {
               <span
                 className={cn(
                   "absolute inline-flex size-full rounded-full opacity-75",
-                  isOpen ? "animate-ping" : "animate-pulse",
+                  live ? "animate-ping" : "animate-pulse",
                 )}
                 style={{ backgroundColor: team.color }}
               />
@@ -166,8 +181,8 @@ export function TeamBuzzer({ session, team, rival }: TeamBuzzerProps) {
           </div>
         </div>
 
-        {/* Tombol jawab besar */}
-        <div className="flex flex-1 flex-col items-center justify-center gap-5">
+        {/* Tombol jawab besar + status/aba-aba */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-6">
           <AnswerButton
             visual={buttonVisual}
             color={team.color}
@@ -181,38 +196,11 @@ export function TeamBuzzer({ session, team, rival }: TeamBuzzerProps) {
             }
           />
 
-          {/* Cooldown */}
-          {isOpen ? (
-            <div className="w-full max-w-xs">
-              <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Zap className="size-3.5" aria-hidden />
-                  Waktu menjawab
-                </span>
-                <span className="font-semibold tabular-nums text-foreground">
-                  {remainingSeconds}s
-                </span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                  style={{
-                    width: `${cooldownProgress * 100}%`,
-                    backgroundColor: team.color,
-                  }}
-                />
-              </div>
-            </div>
-          ) : lockedBySelf ? (
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-amber-300">
-              <Trophy className="size-4" aria-hidden />
-              Terdeteksi paling cepat oleh sistem
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Tombol akan aktif otomatis saat moderator membuka soal.
-            </p>
-          )}
+          <BuzzerStatus
+            state={state}
+            color={team.color}
+            cooldownSeconds={session.cooldownSeconds}
+          />
         </div>
 
         {/* Panel simulasi moderator (data tiruan) */}

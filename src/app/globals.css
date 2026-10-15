@@ -50,6 +50,7 @@
   --animate-ccl-burst: ccl-burst 550ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   --animate-ccl-pop: ccl-pop 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-ccl-shake: ccl-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  --animate-ccl-countdown: ccl-countdown 340ms ease-out;
 }
 
 :root {
@@ -174,5 +175,17 @@
   40%,
   60% {
     transform: translateX(7px);
+  }
+}
+
+/* Hitungan aba-aba: angka membesar lalu mengecil dengan cepat. */
+@keyframes ccl-countdown {
+  from {
+    transform: scale(1.45);
+    opacity: 0.15;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }

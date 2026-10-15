@@ -16,14 +16,16 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { useState } from "react";
-import { Check, Clock, Hand, Lock, TriangleAlert } from "lucide-react";
+import { Check, Clock, Hand, Lock, TriangleAlert, Zap } from "lucide-react";
 import { cn } from "cn";
 
 /** Tampilan tombol untuk tiap fase. */
 export type AnswerButtonVisual =
   /** Belum ada soal: tombol redup, belum bisa ditekan. */
   | "waiting"
-  /** Soal dibuka: tombol menyala & berdenyut, siap ditekan. */
+  /** Aba-aba: tombol menyala & berdenyut, sebentar lagi aktif. */
+  | "ready"
+  /** Soal dibuka: tombol aktif dan siap ditekan. */
   | "armed"
   /** Regu ini menekan paling dulu. */
   | "won"
@@ -34,6 +36,7 @@ export type AnswerButtonVisual =
 
 const ICON: Record<AnswerButtonVisual, ReactNode> = {
   waiting: <Clock className="size-6" aria-hidden />,
+  ready: <Zap className="size-7" aria-hidden />,
   armed: <Hand className="size-7" aria-hidden />,
   won: <Check className="size-7" aria-hidden />,
   locked: <Lock className="size-6" aria-hidden />,
@@ -66,7 +69,8 @@ export function AnswerButton({
   className,
 }: AnswerButtonProps) {
   const armed = visual === "armed";
-  const colored = armed || visual === "won";
+  const ready = visual === "ready";
+  const colored = armed || ready || visual === "won";
 
   // Penanda tiap penekanan, dipakai untuk memicu ulang animasi burst.
   const [burst, setBurst] = useState(0);
@@ -93,11 +97,14 @@ export function AnswerButton({
 
   return (
     <div className="relative flex items-center justify-center">
-      {armed && (
+      {(armed || ready) && (
         <>
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 -m-3 animate-ping rounded-full opacity-30 motion-reduce:animate-none"
+            className={cn(
+              "pointer-events-none absolute inset-0 -m-3 rounded-full opacity-30 motion-reduce:animate-none",
+              armed ? "animate-ping" : "animate-pulse",
+            )}
             style={{ backgroundColor: color }}
           />
           <span
@@ -121,7 +128,9 @@ export function AnswerButton({
           colored
             ? armed
               ? "cursor-pointer border-white/20 active:scale-[0.97]"
-              : "border-white/20 animate-ccl-pop motion-reduce:animate-none"
+              : ready
+                ? "border-white/20 opacity-95"
+                : "border-white/20 animate-ccl-pop motion-reduce:animate-none"
             : visual === "locked"
               ? "border-dashed border-border bg-card text-muted-foreground animate-ccl-shake motion-reduce:animate-none"
               : "border-dashed border-border bg-card text-muted-foreground",

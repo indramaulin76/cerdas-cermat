@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "d1da505870649c67d4e36a4c5a3d3e4353ddd6f9",
+  "generatedForCommit": "a3e06777138bd0b15a59ef9e0383a16ee97d5e84",
   "files": [
     {
       "path": ".gitignore",
@@ -58,9 +58,9 @@
     },
     {
       "path": "src/app/globals.css",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "css",
-      "size": 4304
+      "size": 5133
     },
     {
       "path": "src/app/layout.tsx",
@@ -82,9 +82,9 @@
     },
     {
       "path": "src/components/team/answer-button.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 4694
+      "size": 5799
     },
     {
       "path": "src/components/team/moderator-simulator.tsx",
@@ -94,7 +94,7 @@
     },
     {
       "path": "src/components/team/team-buzzer.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 8006
     },
