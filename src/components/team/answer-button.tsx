@@ -15,6 +15,7 @@
  */
 
 import type { CSSProperties, ReactNode } from "react";
+import { useState } from "react";
 import { Check, Clock, Hand, Lock, TriangleAlert } from "lucide-react";
 import { cn } from "cn";
 
@@ -67,6 +68,9 @@ export function AnswerButton({
   const armed = visual === "armed";
   const colored = armed || visual === "won";
 
+  // Penanda tiap penekanan, dipakai untuk memicu ulang animasi burst.
+  const [burst, setBurst] = useState(0);
+
   const style: CSSProperties = colored
     ? {
         background: armed
@@ -78,7 +82,13 @@ export function AnswerButton({
     : {};
 
   const handlePress = () => {
-    if (armed) onPress?.();
+    if (!armed) return;
+    // Umpan balik visual instan (shockwave) + getaran singkat bila didukung.
+    setBurst((value) => value + 1);
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(40);
+    }
+    onPress?.();
   };
 
   return (
@@ -87,7 +97,7 @@ export function AnswerButton({
         <>
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 -m-3 animate-ping rounded-full opacity-30"
+            className="pointer-events-none absolute inset-0 -m-3 animate-ping rounded-full opacity-30 motion-reduce:animate-none"
             style={{ backgroundColor: color }}
           />
           <span
@@ -105,39 +115,53 @@ export function AnswerButton({
         disabled={!armed}
         aria-label={ariaLabel}
         className={cn(
-          "relative z-10 flex size-[clamp(15rem,76vw,21rem)] select-none flex-col items-center justify-center gap-3 rounded-full border text-center transition-transform duration-150",
+          "relative z-10 flex size-[clamp(15rem,76vw,21rem)] select-none items-center justify-center rounded-full border text-center transition-transform duration-150",
           "touch-manipulation [-webkit-tap-highlight-color:transparent]",
           "focus-visible:ring-4 focus-visible:ring-ring/60 focus-visible:outline-none",
           colored
             ? armed
               ? "cursor-pointer border-white/20 active:scale-[0.97]"
-              : "border-white/20"
-            : "border-dashed border-border bg-card text-muted-foreground",
+              : "border-white/20 animate-ccl-pop motion-reduce:animate-none"
+            : visual === "locked"
+              ? "border-dashed border-border bg-card text-muted-foreground animate-ccl-shake motion-reduce:animate-none"
+              : "border-dashed border-border bg-card text-muted-foreground",
           className,
         )}
         style={style}
       >
-        <span
-          className={cn(
-            "flex size-14 items-center justify-center rounded-full backdrop-blur-sm",
-            colored ? "bg-black/15" : "bg-foreground/5",
-          )}
-        >
-          {ICON[visual]}
-        </span>
-        <span className="px-6 text-[clamp(1.5rem,7vw,2.25rem)] font-black tracking-tight text-balance">
-          {label}
-        </span>
-        {sublabel ? (
+        {/* Shockwave saat tombol ditekan; `key` memicu ulang animasi tiap tekan. */}
+        {burst > 0 && (
+          <span
+            key={burst}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 animate-ccl-burst rounded-full motion-reduce:animate-none"
+            style={{ backgroundColor: color }}
+          />
+        )}
+
+        <span className="relative z-10 flex flex-col items-center gap-3">
           <span
             className={cn(
-              "max-w-[13rem] px-4 text-xs font-medium leading-snug text-balance",
-              colored ? "text-white/85" : "text-muted-foreground",
+              "flex size-14 items-center justify-center rounded-full backdrop-blur-sm",
+              colored ? "bg-black/15" : "bg-foreground/5",
             )}
           >
-            {sublabel}
+            {ICON[visual]}
           </span>
-        ) : null}
+          <span className="px-6 text-[clamp(1.5rem,7vw,2.25rem)] font-black tracking-tight text-balance">
+            {label}
+          </span>
+          {sublabel ? (
+            <span
+              className={cn(
+                "max-w-[13rem] px-4 text-xs font-medium leading-snug text-balance",
+                colored ? "text-white/85" : "text-muted-foreground",
+              )}
+            >
+              {sublabel}
+            </span>
+          ) : null}
+        </span>
       </button>
     </div>
   );

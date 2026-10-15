@@ -1,136 +1,142 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "fbd8cd93d9c853fd06128113697a385d5b3c0a16",
+  "generatedForCommit": "d1da505870649c67d4e36a4c5a3d3e4353ddd6f9",
   "files": [
     {
       "path": ".gitignore",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": null,
       "size": 480
     },
     {
       "path": ".ngodingpakeaiignore",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": null,
       "size": 269
     },
     {
       "path": "AGENTS.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 679
     },
     {
       "path": "README.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 1450
     },
     {
       "path": "components.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 521
     },
     {
       "path": "eslint.config.mjs",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "javascript",
       "size": 465
     },
     {
       "path": "next.config.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 318
     },
     {
       "path": "package-lock.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 408374
     },
     {
       "path": "package.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 708
     },
     {
       "path": "src/app/globals.css",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "css",
       "size": 4304
     },
     {
       "path": "src/app/layout.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 767
     },
     {
       "path": "src/app/page.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1713
     },
     {
       "path": "src/app/regu/page.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1523
     },
     {
-      "path": "src/components/team/moderator-simulator.tsx",
+      "path": "src/components/team/answer-button.tsx",
       "reason": "new",
+      "language": "typescript",
+      "size": 4694
+    },
+    {
+      "path": "src/components/team/moderator-simulator.tsx",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2595
     },
     {
       "path": "src/components/team/team-buzzer.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 10793
+      "size": 8006
     },
     {
       "path": "src/components/ui/badge.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1855
     },
     {
       "path": "src/components/ui/button.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3375
     },
     {
       "path": "src/hooks/use-team-buzzer.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3571
     },
     {
       "path": "src/lib/ccl/types.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2207
     },
     {
       "path": "src/lib/mock/session.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1732
     },
     {
       "path": "src/lib/utils.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 24
     },
     {
       "path": "tsconfig.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 670
     }
