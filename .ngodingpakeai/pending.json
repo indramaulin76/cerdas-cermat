@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "bd88b621492414cf700812a28df10f17aa796575",
+  "generatedForCommit": "c43f37d893ef15848dd9144f5c84366817b74bb8",
   "files": [
     {
       "path": ".gitignore",
@@ -70,7 +70,7 @@
     },
     {
       "path": "src/app/moderator/page.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 475
     },
@@ -88,7 +88,7 @@
     },
     {
       "path": "src/components/moderator/moderator-dashboard.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3258
     },
