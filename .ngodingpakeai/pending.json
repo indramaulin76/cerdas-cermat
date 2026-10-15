@@ -1,0 +1,138 @@
+{
+  "repo": "CCL",
+  "generatedForCommit": "fbd8cd93d9c853fd06128113697a385d5b3c0a16",
+  "files": [
+    {
+      "path": ".gitignore",
+      "reason": "new",
+      "language": null,
+      "size": 480
+    },
+    {
+      "path": ".ngodingpakeaiignore",
+      "reason": "new",
+      "language": null,
+      "size": 269
+    },
+    {
+      "path": "AGENTS.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 679
+    },
+    {
+      "path": "README.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 1450
+    },
+    {
+      "path": "components.json",
+      "reason": "new",
+      "language": "json",
+      "size": 521
+    },
+    {
+      "path": "eslint.config.mjs",
+      "reason": "new",
+      "language": "javascript",
+      "size": 465
+    },
+    {
+      "path": "next.config.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 318
+    },
+    {
+      "path": "package-lock.json",
+      "reason": "new",
+      "language": "json",
+      "size": 408374
+    },
+    {
+      "path": "package.json",
+      "reason": "new",
+      "language": "json",
+      "size": 708
+    },
+    {
+      "path": "src/app/globals.css",
+      "reason": "new",
+      "language": "css",
+      "size": 4304
+    },
+    {
+      "path": "src/app/layout.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 767
+    },
+    {
+      "path": "src/app/page.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1713
+    },
+    {
+      "path": "src/app/regu/page.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1523
+    },
+    {
+      "path": "src/components/team/moderator-simulator.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2595
+    },
+    {
+      "path": "src/components/team/team-buzzer.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 10793
+    },
+    {
+      "path": "src/components/ui/badge.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1855
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3375
+    },
+    {
+      "path": "src/hooks/use-team-buzzer.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3571
+    },
+    {
+      "path": "src/lib/ccl/types.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2207
+    },
+    {
+      "path": "src/lib/mock/session.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1732
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 24
+    },
+    {
+      "path": "tsconfig.json",
+      "reason": "new",
+      "language": "json",
+      "size": 670
+    }
+  ]
+}

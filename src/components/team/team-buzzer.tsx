@@ -9,20 +9,15 @@
  * menyusul, sehingga UI tidak perlu berubah saat backend tersedia.
  */
 
-import type { CSSProperties } from "react";
-import {
-  Check,
-  Clock,
-  Hand,
-  Lock,
-  TriangleAlert,
-  Trophy,
-  Zap,
-} from "lucide-react";
+import { Trophy, Zap } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { useTeamBuzzer } from "@/hooks/use-team-buzzer";
 import type { BuzzerLockReason, Session, Team } from "@/lib/ccl/types";
+import {
+  AnswerButton,
+  type AnswerButtonVisual,
+} from "@/components/team/answer-button";
 import { ModeratorSimulator } from "@/components/team/moderator-simulator";
 import { cn } from "cn";
 
@@ -78,21 +73,16 @@ export function TeamBuzzer({ session, team, rival }: TeamBuzzerProps) {
   const phaseKey = state.phase === "open" ? "open" : state.phase === "waiting" ? "waiting" : state.lockReason ?? "waiting";
   const badge = PHASE_BADGE[phaseKey];
 
-  const handlePress = () => {
-    if (isOpen) buzz();
-  };
-
-  // Gaya tombol: memakai warna regu hanya saat soal dibuka / regu menang.
-  const accentButtonStyle: CSSProperties =
-    isOpen || lockedBySelf
-      ? {
-          background: isOpen
-            ? `linear-gradient(155deg, color-mix(in oklab, ${team.color} 72%, white) 0%, ${team.color} 55%, color-mix(in oklab, ${team.color} 78%, black) 100%)`
-            : `linear-gradient(155deg, color-mix(in oklab, ${team.color} 80%, white) 0%, ${team.color} 100%)`,
-          boxShadow: `0 26px 80px -20px ${team.color}`,
-          color: "#fff",
-        }
-      : {};
+  // Petakan state lomba ke tampilan tombol jawab.
+  const buttonVisual: AnswerButtonVisual = isOpen
+    ? "armed"
+    : lockedBySelf
+      ? "won"
+      : lockedByRival
+        ? "locked"
+        : timedOut
+          ? "timeout"
+          : "waiting";
 
   const label = isOpen
     ? "TEKAN!"
@@ -178,70 +168,18 @@ export function TeamBuzzer({ session, team, rival }: TeamBuzzerProps) {
 
         {/* Tombol jawab besar */}
         <div className="flex flex-1 flex-col items-center justify-center gap-5">
-          <div className="relative flex items-center justify-center">
-            {isOpen && (
-              <>
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 -m-3 animate-ping rounded-full opacity-30"
-                  style={{ backgroundColor: team.color }}
-                />
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 -m-6 rounded-full opacity-40 blur-2xl"
-                  style={{ backgroundColor: team.color }}
-                />
-              </>
-            )}
-
-            <button
-              type="button"
-              onPointerDown={handlePress}
-              onClick={handlePress}
-              disabled={!isOpen}
-              aria-label={
-                isOpen
-                  ? `Tekan tombol jawab untuk ${team.name}`
-                  : `Tombol jawab ${team.name} belum aktif`
-              }
-              className={cn(
-                "relative z-10 flex size-[min(74vw,19rem)] select-none flex-col items-center justify-center gap-3 rounded-full border text-center transition-transform duration-150",
-                "touch-manipulation [-webkit-tap-highlight-color:transparent]",
-                "focus-visible:ring-4 focus-visible:ring-ring/60 focus-visible:outline-none",
-                isOpen
-                  ? "cursor-pointer border-white/20 active:scale-[0.97]"
-                  : lockedBySelf
-                    ? "border-white/20"
-                    : "border-dashed border-border bg-card text-muted-foreground",
-              )}
-              style={accentButtonStyle}
-            >
-              <span className="flex size-14 items-center justify-center rounded-full bg-black/15 backdrop-blur-sm">
-                {isOpen ? (
-                  <Hand className="size-7" aria-hidden />
-                ) : lockedBySelf ? (
-                  <Check className="size-7" aria-hidden />
-                ) : lockedByRival ? (
-                  <Lock className="size-6" aria-hidden />
-                ) : timedOut ? (
-                  <TriangleAlert className="size-6" aria-hidden />
-                ) : (
-                  <Clock className="size-6" aria-hidden />
-                )}
-              </span>
-              <span className="px-6 text-2xl font-black tracking-tight text-balance sm:text-3xl">
-                {label}
-              </span>
-              <span
-                className={cn(
-                  "max-w-[12rem] px-4 text-xs font-medium leading-snug text-balance",
-                  isOpen || lockedBySelf ? "text-white/85" : "text-muted-foreground",
-                )}
-              >
-                {sublabel}
-              </span>
-            </button>
-          </div>
+          <AnswerButton
+            visual={buttonVisual}
+            color={team.color}
+            label={label}
+            sublabel={sublabel}
+            onPress={buzz}
+            ariaLabel={
+              isOpen
+                ? `Tekan tombol jawab untuk ${team.name}`
+                : `Tombol jawab ${team.name} belum aktif`
+            }
+          />
 
           {/* Cooldown */}
           {isOpen ? (
