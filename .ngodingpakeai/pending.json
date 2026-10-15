@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "a3e06777138bd0b15a59ef9e0383a16ee97d5e84",
+  "generatedForCommit": "100bd50380bce3f529a4668240aa9b637ee0a4b0",
   "files": [
     {
       "path": ".gitignore",
@@ -60,7 +60,7 @@
       "path": "src/app/globals.css",
       "reason": "changed",
       "language": "css",
-      "size": 5133
+      "size": 5399
     },
     {
       "path": "src/app/layout.tsx",
@@ -84,19 +84,25 @@
       "path": "src/components/team/answer-button.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 5799
+      "size": 6126
+    },
+    {
+      "path": "src/components/team/buzzer-status.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 4047
     },
     {
       "path": "src/components/team/moderator-simulator.tsx",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2595
+      "size": 2680
     },
     {
       "path": "src/components/team/team-buzzer.tsx",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 8006
+      "size": 7148
     },
     {
       "path": "src/components/ui/badge.tsx",
@@ -112,15 +118,15 @@
     },
     {
       "path": "src/hooks/use-team-buzzer.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 3571
+      "size": 4614
     },
     {
       "path": "src/lib/ccl/types.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2207
+      "size": 2459
     },
     {
       "path": "src/lib/mock/session.ts",
