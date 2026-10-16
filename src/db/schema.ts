@@ -1,37 +1,26 @@
 /**
- * Skema basis data Cerdas Cermat Live.
+ * Skema PostgreSQL Cerdas Cermat Live.
  *
- * Ditulis dengan Drizzle ORM untuk SQLite. Bentuk kolom mengikuti
- * "Database Schema" pada PRD (bagian 6) agar cocok dengan kontrak API
- * yang dipakai dashboard regu, moderator, dan layar penonton.
- *
- * Catatan: tabel `sessions`, `teams`, `rounds`, dan `buzz_events` menopang
- * fitur "Tombol Jawab Regu" sekaligus "Dashboard Moderator". Tabel `sessions`
- * juga menyimpan PIN tiap peran (moderator/penonton/regu) yang menjadi dasar
- * tiga link pada fitur "Sesi & Link". Tabel akun panitia menyusul pada tugas
- * fitur Login Admin.
+ * PostgreSQL terkelola menjaga data tetap persisten di deployment serverless.
  */
 
-import { sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
-  sqliteTable,
+  pgTable,
   text,
+  timestamp,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
-/** Sesi lomba (`sessions`). */
-export const sessions = sqliteTable(
+export const sessions = pgTable(
   "sessions",
   {
     id: text("id").primaryKey(),
     title: text("title").notNull().default("Cerdas Cermat Live"),
-    /** PIN masuk moderator untuk sesi ini. */
     moderatorPin: text("moderator_pin"),
-    /** PIN masuk layar penonton untuk sesi ini. */
     viewerPin: text("viewer_pin"),
-    /** PIN masuk HP regu untuk sesi ini. */
     teamPin: text("team_pin"),
     cooldownSeconds: integer("cooldown_seconds").notNull().default(10),
     correctPoints: integer("correct_points").notNull().default(100),
@@ -39,50 +28,60 @@ export const sessions = sqliteTable(
     status: text("status", { enum: ["draft", "active", "finished"] })
       .notNull()
       .default("draft"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .defaultNow(),
   },
   (table) => [
-    // Daftar sesi ditampilkan terbaru lebih dulu.
     index("sessions_created_at_idx").on(table.createdAt),
-    // Saring sesi menurut status (draft/active/finished).
     index("sessions_status_idx").on(table.status),
   ],
 );
 
-/** Regu peserta lomba (`teams`). */
-export const teams = sqliteTable(
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    role: text("role", { enum: ["admin", "panitia"] })
+      .notNull()
+      .default("panitia"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("users_email_unq").on(table.email),
+    index("users_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export const teams = pgTable(
   "teams",
   {
     id: text("id").primaryKey(),
-    /** Relasi ke sesi lomba (`sessions.id`). */
     sessionId: text("session_id")
       .notNull()
       .references(() => sessions.id, { onDelete: "cascade" }),
-    /** Nama regu yang tampil di layar, mis. "Regu Elang". */
     name: text("name").notNull(),
-    /** Warna identitas regu (hex) untuk aksen tombol & papan skor. */
     color: text("color").notNull(),
-    /** Skor saat ini. */
     score: integer("score").notNull().default(0),
-    /** Waktu dibuat (epoch milidetik). */
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .defaultNow(),
   },
   (table) => [
     index("teams_session_id_idx").on(table.sessionId),
-    // Satu nama regu unik dalam satu sesi.
     uniqueIndex("teams_session_name_unq").on(table.sessionId, table.name),
   ],
 );
 
-/** Soal/ronde (`rounds`). */
-export const rounds = sqliteTable(
+export const rounds = pgTable(
   "rounds",
   {
     id: text("id").primaryKey(),
@@ -93,66 +92,58 @@ export const rounds = sqliteTable(
     status: text("status", { enum: ["draft", "open", "closed"] })
       .notNull()
       .default("draft"),
-    startedAt: integer("started_at", { mode: "timestamp_ms" }),
-    endedAt: integer("ended_at", { mode: "timestamp_ms" }),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }),
+    answeringTeamId: text("answering_team_id").references(() => teams.id, {
+      onDelete: "set null",
+    }),
+    answerStartedAt: timestamp("answer_started_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    awaitingNext: boolean("awaiting_next").notNull().default(false),
+    endedAt: timestamp("ended_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .defaultNow(),
   },
   (table) => [index("rounds_session_id_idx").on(table.sessionId)],
 );
 
-/** Catatan tekanan tombol jawab (`buzz_events`). */
-export const buzzEvents = sqliteTable(
+export const buzzEvents = pgTable(
   "buzz_events",
   {
     id: text("id").primaryKey(),
-    /** Relasi ke sesi lomba (`sessions.id`). */
     sessionId: text("session_id").notNull(),
-    /** Regu yang menekan tombol. */
     teamId: text("team_id")
       .notNull()
       .references(() => teams.id, { onDelete: "cascade" }),
-    /** Relasi ke soal/ronde (`rounds.id`), boleh kosong bila ronde belum ada. */
     roundId: text("round_id").references(() => rounds.id, {
       onDelete: "set null",
     }),
-    /** Kecepatan reaksi sejak soal dibuka (milidetik). */
     reactionMs: integer("reaction_ms").notNull(),
-    /** Penanda regu tercepat pada ronde ini. */
-    isFirst: integer("is_first", { mode: "boolean" })
+    isFirst: boolean("is_first").notNull().default(false),
+    answerStatus: text("answer_status", {
+      enum: ["wrong", "timeout", "correct"],
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
-      .default(false),
-    /** Waktu tekan (epoch milidetik). */
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .defaultNow(),
   },
   (table) => [
     index("buzz_events_session_id_idx").on(table.sessionId),
     index("buzz_events_round_id_idx").on(table.roundId),
     index("buzz_events_team_id_idx").on(table.teamId),
-    // Satu regu hanya boleh menekan sekali per ronde.
     uniqueIndex("buzz_events_round_team_unq").on(table.roundId, table.teamId),
   ],
 );
 
-/** Bentuk baris tabel `teams`. */
 export type TeamRow = typeof teams.$inferSelect;
-/** Bentuk baris baru tabel `teams`. */
 export type NewTeamRow = typeof teams.$inferInsert;
-
-/** Bentuk baris tabel `rounds`. */
 export type RoundRow = typeof rounds.$inferSelect;
-/** Bentuk baris baru tabel `rounds`. */
 export type NewRoundRow = typeof rounds.$inferInsert;
-
-/** Bentuk baris tabel `sessions`. */
 export type SessionRow = typeof sessions.$inferSelect;
-/** Bentuk baris baru tabel `sessions`. */
 export type NewSessionRow = typeof sessions.$inferInsert;
-
-/** Bentuk baris tabel `buzz_events`. */
+export type UserRow = typeof users.$inferSelect;
+export type NewUserRow = typeof users.$inferInsert;
 export type BuzzEventRow = typeof buzzEvents.$inferSelect;
-/** Bentuk baris baru tabel `buzz_events`. */
 export type NewBuzzEventRow = typeof buzzEvents.$inferInsert;

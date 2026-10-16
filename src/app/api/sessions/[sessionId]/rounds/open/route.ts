@@ -30,6 +30,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   const outcome = openRound({ sessionId });
+  if (outcome.status === "inactive_session") {
+    return errorResponse(
+      "inactive_session",
+      "Sesi harus berstatus berlangsung sebelum soal dibuka.",
+      409,
+    );
+  }
   const round = toRoundDto(outcome.row);
   const response: OpenRoundResponse = {
     ok: true,

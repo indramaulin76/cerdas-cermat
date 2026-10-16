@@ -6,7 +6,10 @@ import type {
   CreateTeamResponse,
   TeamsResponse,
 } from "@/lib/ccl/api";
-import { requireModerator } from "@/server/auth";
+import {
+  requireAdminOrAnyRole,
+  requireModeratorOrAdmin,
+} from "@/server/admin-auth";
 import { publish } from "@/server/events";
 import {
   createTeam,
@@ -37,6 +40,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   if (!sessionId) {
     return errorResponse("invalid_session", "Session id wajib diisi.", 400);
   }
+  const gate = await requireAdminOrAnyRole(sessionId, [
+    "moderator",
+    "viewer",
+    "team",
+  ]);
+  if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
 
   const response: TeamsResponse = {
     ok: true,
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_session", "Session id wajib diisi.", 400);
   }
 
-  const gate = await requireModerator(sessionId);
+  const gate = await requireModeratorOrAdmin(sessionId);
   if (!gate.ok) {
     return errorResponse(gate.error, gate.message, gate.status);
   }

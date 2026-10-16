@@ -9,8 +9,8 @@ import {
   ADMIN_COOKIE_NAME,
   adminCookieOptions,
   createAdminToken,
-  isAdminAuthenticated,
-  verifyAdminPassword,
+  getCurrentAdmin,
+  verifyAdminCredentials,
 } from "@/server/admin-auth";
 
 function errorResponse(error: string, message: string, status: number) {
@@ -22,8 +22,12 @@ function errorResponse(error: string, message: string, status: number) {
 
 /** Status masuk panitia saat ini. */
 export async function GET() {
-  const authenticated = await isAdminAuthenticated();
-  const response: AdminAuthResponse = { ok: true, authenticated };
+  const admin = await getCurrentAdmin();
+  const response: AdminAuthResponse = {
+    ok: true,
+    authenticated: admin !== null,
+    admin,
+  };
   return NextResponse.json(response);
 }
 
@@ -40,19 +44,41 @@ export async function POST(request: NextRequest) {
     return errorResponse("invalid_body", "Body permintaan tidak valid.", 400);
   }
 
-  const { password } = body as Partial<AdminLoginRequest>;
+  const { email, password } = body as Partial<AdminLoginRequest>;
 
-  if (typeof password !== "string" || password.trim() === "") {
-    return errorResponse("invalid_password", "Kata sandi wajib diisi.", 400);
+  if (
+    typeof email !== "string" ||
+    email.trim() === "" ||
+    typeof password !== "string" ||
+    password === ""
+  ) {
+    return errorResponse(
+      "invalid_credentials",
+      "Email dan kata sandi wajib diisi.",
+      400,
+    );
   }
 
-  if (!verifyAdminPassword(password)) {
-    return errorResponse("invalid_password", "Kata sandi panitia salah.", 401);
+  const admin = verifyAdminCredentials(email, password);
+  if (!admin) {
+    return errorResponse(
+      "invalid_credentials",
+      "Email atau kata sandi salah.",
+      401,
+    );
   }
 
-  const response: AdminAuthResponse = { ok: true, authenticated: true };
+  const response: AdminAuthResponse = {
+    ok: true,
+    authenticated: true,
+    admin,
+  };
   const result = NextResponse.json(response);
-  result.cookies.set(ADMIN_COOKIE_NAME, createAdminToken(), adminCookieOptions());
+  result.cookies.set(
+    ADMIN_COOKIE_NAME,
+    createAdminToken(admin.id),
+    adminCookieOptions(),
+  );
   return result;
 }
 

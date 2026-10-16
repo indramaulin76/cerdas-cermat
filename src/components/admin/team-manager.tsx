@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Check, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TEAM_COLORS, nextTeamColor } from "@/lib/ccl/team-colors";
+import { TEAM_COLORS } from "@/lib/ccl/team-colors";
 import type { Team } from "@/lib/ccl/types";
+import { teamPath, teamsPath } from "@/lib/ccl/api";
 
 /**
  * Halaman kelola regu (dipakai admin sebelum lomba dimulai).
@@ -15,14 +16,6 @@ import type { Team } from "@/lib/ccl/types";
  * dengan validasi, dan warna otomatis yang bisa disesuaikan lewat pemilih
  * warna. Warna disimpan di data regu sehingga tampil sama di semua dashboard.
  */
-
-/** Id unik untuk regu baru. */
-function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `team-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
 
 /** Nama default "Regu N" dengan N terkecil yang belum terpakai. */
 function nextTeamName(teams: Team[]): string {
@@ -58,47 +51,127 @@ function teamNameError(team: Team, duplicateNames: Set<string>): string | null {
 }
 
 export function TeamManager({
+  sessionId,
   initialTeams,
   maxTeams,
 }: {
+  sessionId: string;
   initialTeams: Team[];
   maxTeams: number;
 }) {
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [notice, setNotice] = useState<string | null>(null);
   const [openColorId, setOpenColorId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const loadTeams = useCallback(async () => {
+    const response = await fetch(teamsPath(sessionId), {
+      credentials: "same-origin",
+    });
+    const result = (await response.json()) as {
+      teams?: Array<Team & { sessionId: string; createdAt: string }>;
+      message?: string;
+    };
+    if (!response.ok) throw new Error(result.message ?? "Gagal memuat regu.");
+    setTeams((result.teams ?? []).map(({ id, name, color, score }) => ({
+      id,
+      name,
+      color,
+      score,
+    })));
+  }, [sessionId]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(teamsPath(sessionId), { credentials: "same-origin" })
+      .then(async (response) => {
+        const result = (await response.json()) as {
+          teams?: Array<Team & { sessionId: string; createdAt: string }>;
+          message?: string;
+        };
+        if (!response.ok) throw new Error(result.message ?? "Gagal memuat regu.");
+        if (active) {
+          setTeams((result.teams ?? []).map(({ id, name, color, score }) => ({
+            id,
+            name,
+            color,
+            score,
+          })));
+        }
+      })
+      .catch((reason: unknown) => {
+        if (active) setNotice(reason instanceof Error ? reason.message : "Gagal memuat regu.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionId]);
 
   const atMax = teams.length >= maxTeams;
 
-  const addTeam = useCallback(() => {
+  const addTeam = useCallback(async () => {
     if (teams.length >= maxTeams) {
-      setNotice(
-        `Maksimal ${maxTeams} regu. Hapus salah satu regu untuk menambah.`,
-      );
+      setNotice(`Maksimal ${maxTeams} regu. Hapus salah satu regu untuk menambah.`);
       return;
     }
+    setBusy(true);
     setNotice(null);
-    setTeams((current) =>
-      current.length >= maxTeams
-        ? current
-        : [
-            ...current,
-            {
-              id: newId(),
-              name: nextTeamName(current),
-              // Warna otomatis: pilih yang belum dipakai regu lain.
-              color: nextTeamColor(current.map((team) => team.color)),
-              score: 0,
-            },
-          ],
-    );
-  }, [teams.length, maxTeams]);
+    try {
+      const response = await fetch(teamsPath(sessionId), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: nextTeamName(teams) }),
+      });
+      const result = (await response.json()) as { message?: string };
+      if (!response.ok) throw new Error(result.message ?? "Gagal menambah regu.");
+      await loadTeams();
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Gagal menambah regu.");
+    } finally {
+      setBusy(false);
+    }
+  }, [loadTeams, maxTeams, sessionId, teams]);
 
-  const removeTeam = useCallback((id: string) => {
+  const removeTeam = useCallback(async (id: string) => {
+    setBusy(true);
     setNotice(null);
-    setOpenColorId((open) => (open === id ? null : open));
-    setTeams((current) => current.filter((team) => team.id !== id));
-  }, []);
+    try {
+      const response = await fetch(teamPath(sessionId, id), {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const result = (await response.json()) as { message?: string };
+      if (!response.ok) throw new Error(result.message ?? "Gagal menghapus regu.");
+      setOpenColorId((open) => (open === id ? null : open));
+      await loadTeams();
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Gagal menghapus regu.");
+    } finally {
+      setBusy(false);
+    }
+  }, [loadTeams, sessionId]);
+
+  const saveIdentity = useCallback(async (
+    id: string,
+    patch: { name?: string; color?: string },
+  ) => {
+    setNotice(null);
+    try {
+      const response = await fetch(teamPath(sessionId, id), {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const result = (await response.json()) as { message?: string };
+      if (!response.ok) throw new Error(result.message ?? "Gagal menyimpan identitas regu.");
+      await loadTeams();
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Gagal menyimpan regu.");
+      await loadTeams();
+    }
+  }, [loadTeams, sessionId]);
 
   const updateName = useCallback((id: string, name: string) => {
     setTeams((current) =>
@@ -123,7 +196,7 @@ export function TeamManager({
   const namedTeams = teams.filter((team) => team.name.trim().length > 0);
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
+    <section className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
       {/* Latar bercahaya. */}
       <div
         aria-hidden
@@ -135,7 +208,7 @@ export function TeamManager({
       <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8 lg:max-w-4xl">
         <header className="space-y-2">
           <Badge variant="outline" className="text-muted-foreground">
-            Fase 2 · data tiruan
+            Kelola regu sesi ini
           </Badge>
           <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
             Kelola Regu
@@ -215,10 +288,7 @@ export function TeamManager({
                       className="flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-black text-white ring-2 ring-white/15 transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-fuchsia-400 focus-visible:outline-none"
                       style={{ backgroundColor: team.color }}
                     >
-                      {team.name
-                        .replace(/^Regu\s+/i, "")
-                        .charAt(0)
-                        .toUpperCase() || "?"}
+                      {team.name.replace(/^Regu\s+/i, "").charAt(0).toUpperCase() || "?"}
                     </button>
                     <div className="min-w-0 flex-1">
                       <input
@@ -227,6 +297,9 @@ export function TeamManager({
                         onChange={(event) =>
                           updateName(team.id, event.target.value)
                         }
+                        onBlur={() => {
+                          if (!error) void saveIdentity(team.id, { name: team.name });
+                        }}
                         aria-label={`Nama regu ${index + 1}`}
                         aria-invalid={error ? true : undefined}
                         className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold outline-none transition-colors focus-visible:border-fuchsia-400 focus-visible:ring-2 focus-visible:ring-fuchsia-400/30 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/30"
@@ -256,7 +329,10 @@ export function TeamManager({
                           <button
                             key={color}
                             type="button"
-                            onClick={() => updateColor(team.id, color)}
+                            onClick={() => {
+                              updateColor(team.id, color);
+                              void saveIdentity(team.id, { color });
+                            }}
                             aria-label={`Pilih warna ${color}`}
                             aria-pressed={selected}
                             className="flex size-7 items-center justify-center rounded-lg ring-2 ring-transparent transition-transform hover:scale-110"
@@ -275,6 +351,7 @@ export function TeamManager({
                           onChange={(event) =>
                             updateColor(team.id, event.target.value)
                           }
+                          onBlur={() => void saveIdentity(team.id, { color: team.color })}
                           aria-label="Warna kustom"
                           className="size-7 cursor-pointer rounded-lg border border-white/10 bg-transparent"
                         />
@@ -293,7 +370,7 @@ export function TeamManager({
             type="button"
             variant="outline"
             onClick={addTeam}
-            disabled={atMax}
+            disabled={atMax || busy}
             aria-describedby="team-limit-hint"
             className="h-11 w-full border-dashed"
           >
@@ -314,6 +391,6 @@ export function TeamManager({
           </p>
         </div>
       </div>
-    </main>
+    </section>
   );
 }

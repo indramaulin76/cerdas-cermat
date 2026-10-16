@@ -114,11 +114,10 @@ export function ViewerScreen({ session }: { session: Session }) {
       <footer className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 px-5 py-4 text-xs text-muted-foreground sm:px-10">
         <p>Waktu jawab {session.cooldownSeconds}s</p>
         <p>
-          Benar +{session.correctPoints} · Salah {session.wrongPoints}
+          Benar +100 · Salah −50 / −75 / −100
         </p>
         <p className="font-medium">Skor diperbarui otomatis</p>
       </footer>
     </main>
   );
 }
-

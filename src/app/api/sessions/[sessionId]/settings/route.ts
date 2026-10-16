@@ -19,10 +19,10 @@ function errorResponse(error: string, message: string, status: number) {
 }
 
 /**
- * Ubah pengaturan sesi: cooldown (waktu jawab) & poin (panitia/moderator).
+ * Ubah durasi menjawab pada sesi.
  *
  * `PATCH /api/sessions/[sessionId]/settings`
- * Body: `{ cooldownSeconds?, correctPoints?, wrongPoints? }`
+ * Body: `{ cooldownSeconds? }`
  *
  * Boleh diakses panitia yang sudah masuk atau moderator sesi. Perubahan
  * disiarkan lewat SSE (`session.updated`) supaya aba-aba regu dan papan skor
@@ -51,25 +51,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_body", "Body permintaan tidak valid.", 400);
   }
 
-  const { cooldownSeconds, correctPoints, wrongPoints } =
-    body as UpdateSettingsRequest;
+  const { cooldownSeconds } = body as UpdateSettingsRequest;
 
-  for (const [key, value] of Object.entries({
-    cooldownSeconds,
-    correctPoints,
-    wrongPoints,
-  })) {
-    if (value !== undefined && typeof value !== "number") {
-      return errorResponse("invalid_field", `${key} wajib berupa angka.`, 400);
-    }
+  if (cooldownSeconds !== undefined && typeof cooldownSeconds !== "number") {
+    return errorResponse("invalid_field", "cooldownSeconds wajib berupa angka.", 400);
   }
 
-  const result = updateSessionSettings({
-    sessionId,
-    cooldownSeconds,
-    correctPoints,
-    wrongPoints,
-  });
+  const result = updateSessionSettings({ sessionId, cooldownSeconds });
 
   if (result.status === "unknown_session") {
     return errorResponse(

@@ -8,7 +8,7 @@ import { getMockRival } from "@/lib/mock/session";
 
 export function ModeratorDashboard({ session }: { session: Session }) {
   const firstTeam = session.teams[0] ?? { id: "none", name: "—", color: "#64748b" };
-  const { state, startQuestion, buzz, lockByRival, reset } = useTeamBuzzer(
+  const { state, startQuestion, lockByRival, reset } = useTeamBuzzer(
     firstTeam.id,
     firstTeam.name,
     session.cooldownSeconds,

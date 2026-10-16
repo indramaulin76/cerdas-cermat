@@ -87,8 +87,6 @@ export function getSession(sessionId: string): SessionRow | undefined {
 export type UpdateSettingsInput = {
   sessionId: string;
   cooldownSeconds?: number;
-  correctPoints?: number;
-  wrongPoints?: number;
 };
 
 /** Hasil pengaturan sesi. */
@@ -97,21 +95,37 @@ export type UpdateSettingsOutcome =
   | { status: "unknown_session"; sessionId: string }
   | { status: "invalid" };
 
+export type SessionStatus = "draft" | "active" | "finished";
+
+export function updateSessionStatus(
+  sessionId: string,
+  status: SessionStatus,
+): SessionRow | undefined {
+  const now = new Date();
+  const existing = db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .get();
+  if (!existing) return undefined;
+  db.update(sessions)
+    .set({ status, updatedAt: now })
+    .where(eq(sessions.id, sessionId))
+    .run();
+  return { ...existing, status, updatedAt: now };
+}
+
 /**
  * Ubah pengaturan sesi.
  *
- * Hanya bidang yang diberikan yang diubah. Batas wajar: cooldown 1..600 detik,
- * poin dalam rentang -1000..1000, supaya tidak ada nilai aneh yang merusak
- * jalannya lomba.
+ * Durasi menjawab dibatasi 1..600 detik agar tidak mengganggu jalannya lomba.
  */
 export function updateSessionSettings(
   input: UpdateSettingsInput,
 ): UpdateSettingsOutcome {
   const { sessionId } = input;
 
-  const patch: Partial<
-    Pick<SessionRow, "cooldownSeconds" | "correctPoints" | "wrongPoints">
-  > = {};
+  const patch: Partial<Pick<SessionRow, "cooldownSeconds">> = {};
 
   if (input.cooldownSeconds !== undefined) {
     if (
@@ -122,26 +136,6 @@ export function updateSessionSettings(
       return { status: "invalid" } as const;
     }
     patch.cooldownSeconds = Math.round(input.cooldownSeconds);
-  }
-
-  if (input.correctPoints !== undefined) {
-    if (
-      !Number.isFinite(input.correctPoints) ||
-      Math.abs(input.correctPoints) > 1000
-    ) {
-      return { status: "invalid" } as const;
-    }
-    patch.correctPoints = Math.round(input.correctPoints);
-  }
-
-  if (input.wrongPoints !== undefined) {
-    if (
-      !Number.isFinite(input.wrongPoints) ||
-      Math.abs(input.wrongPoints) > 1000
-    ) {
-      return { status: "invalid" } as const;
-    }
-    patch.wrongPoints = Math.round(input.wrongPoints);
   }
 
   if (Object.keys(patch).length === 0) {
@@ -180,12 +174,19 @@ export type CreateSessionInput = {
  *
  * Id sesi dibuat unik & ramah link, lalu tiap peran mendapat PIN sendiri. Sesi
  * lahir berstatus `draft` sampai admin mengaktifkannya, dan memakai nilai awal
- * pengaturan yang masuk akal (cooldown 10 detik, +100 / -50 poin).
+ * pengaturan durasi dari sesi terakhir (atau 10 detik bila belum ada sesi).
  */
 export function createSession(input: CreateSessionInput): SessionRow {
   const id = generateSessionId(input.title);
   const pins = generateRolePins();
   const now = new Date();
+  const previousSettings = db
+    .select({
+      cooldownSeconds: sessions.cooldownSeconds,
+    })
+    .from(sessions)
+    .orderBy(desc(sessions.updatedAt), desc(sessions.createdAt))
+    .get();
 
   const row: NewSessionRow = {
     id,
@@ -193,6 +194,9 @@ export function createSession(input: CreateSessionInput): SessionRow {
     moderatorPin: pins.moderator,
     viewerPin: pins.viewer,
     teamPin: pins.team,
+    cooldownSeconds: previousSettings?.cooldownSeconds ?? 10,
+    correctPoints: 100,
+    wrongPoints: -50,
     status: "draft",
     createdAt: now,
     updatedAt: now,

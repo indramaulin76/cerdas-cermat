@@ -12,13 +12,6 @@ import { cn } from "cn";
  * itu disorot dengan tanda khusus dan animasi yang mencuri perhatian.
  */
 
-/** Warna medali untuk tiga peringkat teratas. */
-const RANK_ACCENT: Record<number, string> = {
-  1: "text-amber-400",
-  2: "text-slate-300",
-  3: "text-orange-400",
-};
-
 /** Inisial singkat nama regu (buang kata "Regu"). */
 function teamInitial(name: string): string {
   const cleaned = name.replace(/^Regu\s+/i, "").trim();
@@ -75,15 +68,6 @@ export function ViewerScoreboard({
                 }}
               />
             ) : null}
-
-            <span
-              className={cn(
-                "relative w-6 shrink-0 text-center text-xl font-black tabular-nums sm:w-8 sm:text-3xl 2xl:text-4xl",
-                RANK_ACCENT[rank] ?? "text-muted-foreground/70",
-              )}
-            >
-              {rank}
-            </span>
 
             <span
               className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl text-xl font-black text-white sm:size-16 sm:text-3xl 2xl:size-20 2xl:text-4xl"

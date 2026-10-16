@@ -29,6 +29,20 @@
       "when": 1792142947142,
       "tag": "0003_normal_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792152506219,
+      "tag": "0004_charming_golden_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792178593297,
+      "tag": "0005_fine_randall_flagg",
+      "breakpoints": true
     }
   ]
 }

@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cerdas Cermat Live
 
-## Getting Started
+Aplikasi lomba cerdas cermat real-time dengan dashboard panitia, moderator,
+regu, dan layar penonton. Aplikasi memakai Next.js, SQLite, dan Drizzle ORM.
 
-First, run the development server:
+## Menjalankan secara lokal
 
 ```bash
+npm install
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka [http://localhost:3000](http://localhost:3000). Secara lokal, akun awal
+adalah `admin@ccl.local` dengan kata sandi `panitia`. Ganti kredensial ini
+sebelum menggunakan aplikasi di luar mesin pengembangan.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Konfigurasi
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Variabel lingkungan berikut dapat disetel:
 
-## Learn More
+| Variabel | Kegunaan | Nilai lokal bawaan |
+| --- | --- | --- |
+| `DATABASE_URL` | Lokasi berkas SQLite yang digunakan Drizzle | `./data/ccl.db` |
+| `CCL_ADMIN_EMAIL` | Email akun panitia awal | `admin@ccl.local` |
+| `CCL_ADMIN_PASSWORD` | Kata sandi akun panitia awal | `panitia` |
+| `CCL_AUTH_SECRET` | Rahasia HMAC untuk cookie login | Rahasia pengembangan tetap |
 
-To learn more about Next.js, take a look at the following resources:
+Untuk produksi, wajib set `CCL_ADMIN_EMAIL`, `CCL_ADMIN_PASSWORD`, dan
+`CCL_AUTH_SECRET`; aplikasi menolak autentikasi bootstrap/token bila
+konfigurasinya tidak tersedia. Gunakan kata sandi yang kuat serta rahasia
+acak yang panjang (minimal 32 byte), dan simpan nilainya melalui pengelola
+rahasia lingkungan deployment, bukan di repositori.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Contoh membuat rahasia secara lokal:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+openssl rand -hex 32
+```
 
-## Deploy on Vercel
+`DATABASE_URL` harus menunjuk ke penyimpanan persisten dan dapat ditulis oleh
+proses aplikasi. Setelah perubahan skema, tinjau berkas SQL di `drizzle/`,
+kemudian jalankan `npm run db:migrate` sebelum menjalankan versi aplikasi yang
+baru. Jangan gunakan `db:push` pada database produksi.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Alur lomba live
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Moderator membuka soal dengan **Siap**. Regu dapat menekan tombol buzz satu
+kali; urutan tekanan tampil langsung dan moderator memilih regu yang menjawab.
+Timer dimulai saat regu dipilih. Saat waktu habis, giliran tetap di regu itu
+sampai moderator mencatat hasil atau memilih regu lain. Jawaban salah
+memerlukan pilihan pengurangan 50, 75, atau 100 poin dan moderator menekan
+**Regu berikutnya**. Jawaban benar menambah 100 poin dan menutup soal. Timer dan
+skor disiarkan ke layar penonton; **Ulangi / Reset** mengembalikan moderator ke
+Standby.
+
+## Validasi
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
+
+## Catatan deployment
+
+SSE dan bus peristiwa saat ini berjalan dalam satu proses server Node.js.
+Jalankan satu instance aplikasi dengan SQLite pada disk persisten; deployment
+serverless atau multi-instance memerlukan pub/sub bersama dan database yang
+mendukung banyak instance sebelum digunakan untuk acara live.

@@ -17,12 +17,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import {
-  buzzEvents,
-  rounds,
-  teams,
-  type BuzzEventRow,
-} from "@/db/schema";
+import { buzzEvents, rounds, teams, type BuzzEventRow } from "@/db/schema";
 import type { BuzzEventDto, HighlightDto } from "@/lib/ccl/api";
 
 /**
@@ -37,8 +32,7 @@ export const TIE_TOLERANCE_MS = 50;
 export type RecordBuzzInput = {
   sessionId: string;
   teamId: string;
-  roundId?: string | null;
-  reactionMs: number;
+  roundId: string;
 };
 
 /** Hasil operasi pencatatan tekanan. */
@@ -50,7 +44,8 @@ export type RecordBuzzOutcome =
       duplicate: boolean;
       ranking: BuzzEventRow[];
     }
-  | { status: "unknown_team"; teamId: string };
+  | { status: "unknown_team"; teamId: string }
+  | { status: "round_not_open" };
 
 /** Batas cakupan ronde: cocokkan `round_id` yang sama (termasuk sama-sama null). */
 function roundScope(roundId: string | null) {
@@ -84,7 +79,9 @@ export function rankBuzzes(rows: BuzzEventRow[]): BuzzEventRow[] {
     const withinTolerance =
       second.reactionMs - first.reactionMs <= TIE_TOLERANCE_MS;
     const secondArrivedEarlier =
-      second.createdAt.getTime() < first.createdAt.getTime();
+      second.createdAt.getTime() < first.createdAt.getTime() ||
+      (second.createdAt.getTime() === first.createdAt.getTime() &&
+        second.id < first.id);
 
     if (withinTolerance && secondArrivedEarlier) {
       ranked[0] = second;
@@ -106,7 +103,6 @@ export function rankBuzzes(rows: BuzzEventRow[]): BuzzEventRow[] {
  */
 export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
   const { sessionId, teamId } = input;
-  const reactionMs = Math.max(0, Math.round(input.reactionMs));
 
   return db.transaction((tx) => {
     const team = tx
@@ -119,19 +115,31 @@ export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
       return { status: "unknown_team", teamId } as const;
     }
 
-    // Bila klien tidak menyebut ronde, pakai soal yang sedang terbuka supaya
-    // tekanan otomatis terhubung ke ronde yang benar.
-    let roundId = input.roundId ?? null;
-    if (roundId === null) {
-      const openRound = tx
-        .select({ id: rounds.id })
-        .from(rounds)
-        .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
-        .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-        .get();
-      roundId = openRound?.id ?? null;
+    const round = tx
+      .select()
+      .from(rounds)
+      .where(
+        and(
+          eq(rounds.id, input.roundId),
+          eq(rounds.sessionId, sessionId),
+          eq(rounds.status, "open"),
+        ),
+      )
+      .get();
+    if (
+      !round ||
+      round.startedAt === null ||
+      round.answeringTeamId !== null ||
+      round.awaitingNext
+    ) {
+      return { status: "round_not_open" } as const;
     }
 
+    const receivedAt = new Date();
+    const nowMs = receivedAt.getTime();
+    const startedAtMs = round.startedAt.getTime();
+
+    const roundId = round.id;
     const scope = and(eq(buzzEvents.sessionId, sessionId), roundScope(roundId));
 
     const existing = tx
@@ -142,14 +150,15 @@ export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
 
     if (!existing) {
       const row: BuzzEventRow = {
-        id: randomUUID(),
+        id: `${process.hrtime.bigint().toString().padStart(24, "0")}-${randomUUID()}`,
         sessionId,
         teamId,
         roundId,
-        reactionMs,
+        reactionMs: Math.max(0, nowMs - startedAtMs),
         // Ditentukan ulang di bawah; nilai awal sekadar pengisi.
         isFirst: false,
-        createdAt: new Date(),
+        answerStatus: null,
+        createdAt: receivedAt,
       };
       tx.insert(buzzEvents).values(row).run();
     }
@@ -192,6 +201,7 @@ export function toBuzzEventDto(row: BuzzEventRow): BuzzEventDto {
     roundId: row.roundId,
     reactionMs: row.reactionMs,
     isFirst: row.isFirst,
+    answerStatus: row.answerStatus,
     createdAt: row.createdAt.toISOString(),
   };
 }

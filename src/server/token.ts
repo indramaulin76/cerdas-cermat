@@ -9,16 +9,17 @@ import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-/**
- * Rahasia penandatangan cookie. Setel `CCL_AUTH_SECRET` di produksi; nilai
- * bawaan hanya untuk pengembangan lokal.
- */
-export const AUTH_SECRET =
-  process.env.CCL_AUTH_SECRET ?? "ccl-dev-insecure-secret";
+function getAuthSecret(): string {
+  const secret = process.env.CCL_AUTH_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("CCL_AUTH_SECRET wajib diatur di lingkungan produksi.");
+  }
+  return secret ?? "ccl-dev-insecure-secret";
+}
 
 /** Tanda tangani sebuah nilai dengan HMAC-SHA256. */
 export function signValue(value: string): string {
-  return createHmac("sha256", AUTH_SECRET).update(value).digest("hex");
+  return createHmac("sha256", getAuthSecret()).update(value).digest("hex");
 }
 
 /** Bandingkan dua tanda tangan dengan waktu tetap. */

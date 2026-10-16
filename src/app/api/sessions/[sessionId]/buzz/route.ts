@@ -7,6 +7,7 @@ import type {
 } from "@/lib/ccl/api";
 import { getBuzzOrder, recordBuzz, toBuzzEventDto, toHighlightDto } from "@/server/buzz";
 import { publish } from "@/server/events";
+import { requireModerator, requireTeam } from "@/server/auth";
 
 /**
  * Endpoint tekanan tombol jawab.
@@ -38,6 +39,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!sessionId) {
     return errorResponse("invalid_session", "Session id wajib diisi.", 400);
   }
+  const gate = await requireModerator(sessionId);
+  if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
 
   const roundId = request.nextUrl.searchParams.get("roundId");
   const order = getBuzzOrder({ sessionId, roundId });
@@ -57,6 +60,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!sessionId) {
     return errorResponse("invalid_session", "Session id wajib diisi.", 400);
   }
+  const gate = await requireTeam(sessionId);
+  if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
 
   let body: unknown;
   try {
@@ -69,33 +74,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_body", "Body permintaan tidak valid.", 400);
   }
 
-  const { teamId, roundId, reactionMs } = body as Partial<RecordBuzzRequest>;
+  const { teamId, roundId } = body as Partial<RecordBuzzRequest>;
 
   if (typeof teamId !== "string" || teamId.trim() === "") {
     return errorResponse("invalid_team", "teamId wajib berupa teks.", 400);
   }
 
-  if (
-    typeof reactionMs !== "number" ||
-    !Number.isFinite(reactionMs) ||
-    reactionMs < 0
-  ) {
+  if (typeof roundId !== "string" || roundId.trim() === "") {
     return errorResponse(
-      "invalid_reaction",
-      "reactionMs wajib berupa angka >= 0.",
+      "invalid_round",
+      "roundId wajib menunjuk soal yang sedang terbuka.",
       400,
     );
-  }
-
-  if (roundId !== undefined && roundId !== null && typeof roundId !== "string") {
-    return errorResponse("invalid_round", "roundId harus teks atau null.", 400);
   }
 
   const outcome = recordBuzz({
     sessionId,
     teamId: teamId.trim(),
-    roundId: roundId ?? null,
-    reactionMs,
+    roundId,
   });
 
   if (outcome.status === "unknown_team") {
@@ -105,7 +101,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       404,
     );
   }
-
+  if (outcome.status === "round_not_open") {
+    return errorResponse("round_not_open", "Tidak ada soal aktif untuk sesi ini.", 409);
+  }
   const event = toBuzzEventDto(outcome.row);
 
   const response: BuzzApiResponse = {

@@ -5,20 +5,23 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { buzzEvents, rounds, type BuzzEventRow, type RoundRow } from "@/db/schema";
-import type { QuestionPhase, RoundDto } from "@/lib/ccl/api";
-import { rankBuzzes } from "@/server/buzz";
+import {
+  buzzEvents,
+  rounds,
+  sessions,
+  teams,
+  type BuzzEventRow,
+  type RoundRow,
+  type TeamRow,
+} from "@/db/schema";
+import type { QuestionPhase, RoundDto, SessionEvent } from "@/lib/ccl/api";
+import { rankBuzzes, toBuzzEventDto } from "@/server/buzz";
 
-export type OpenRoundInput = {
-  sessionId: string;
-};
+export type OpenRoundInput = { sessionId: string };
+export type OpenRoundOutcome =
+  | { status: "opened"; row: RoundRow }
+  | { status: "inactive_session" };
 
-export type OpenRoundOutcome = {
-  status: "opened";
-  row: RoundRow;
-};
-
-/** Cari soal/ronde yang sedang terbuka untuk sebuah sesi. */
 function findOpenRound(sessionId: string): RoundRow | undefined {
   return db
     .select()
@@ -28,14 +31,31 @@ function findOpenRound(sessionId: string): RoundRow | undefined {
     .get();
 }
 
+function getRanking(roundId: string): BuzzEventRow[] {
+  return rankBuzzes(
+    db.select().from(buzzEvents).where(eq(buzzEvents.roundId, roundId)).all(),
+  );
+}
+
+function getAvailableRanking(rows: BuzzEventRow[]): BuzzEventRow[] {
+  return rows.filter((row) => row.answerStatus === null);
+}
+
+function nextAvailableTeam(rows: BuzzEventRow[]): BuzzEventRow | undefined {
+  return getAvailableRanking(rows)[0];
+}
+
 export function toRoundDto(row: RoundRow): RoundDto {
   return {
     id: row.id,
     sessionId: row.sessionId,
     orderNumber: row.orderNumber,
-    status: row.status as "draft" | "open" | "closed",
-    startedAt: row.startedAt ? row.startedAt.toISOString() : null,
-    endedAt: row.endedAt ? row.endedAt.toISOString() : null,
+    status: row.status,
+    startedAt: row.startedAt?.toISOString() ?? null,
+    answeringTeamId: row.answeringTeamId,
+    answerStartedAt: row.answerStartedAt?.toISOString() ?? null,
+    awaitingNext: row.awaitingNext,
+    endedAt: row.endedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -47,48 +67,35 @@ export type RoundStatusOutcome = {
   winner: BuzzEventRow | null;
 };
 
-/**
- * Status soal saat ini untuk moderator.
- *
- * - `idle`   — belum ada soal yang dibuka.
- * - `open`   — soal terbuka, belum ada regu menekan.
- * - `locked` — sudah ada regu menekan (jawaban terkunci).
- */
 export function getRoundStatus(sessionId: string): RoundStatusOutcome {
   const round = findOpenRound(sessionId);
-  if (!round) {
-    return { phase: "idle", round: null, ranking: [], winner: null };
-  }
+  if (!round) return { phase: "idle", round: null, ranking: [], winner: null };
 
-  const rows = db
-    .select()
-    .from(buzzEvents)
-    .where(
-      and(eq(buzzEvents.sessionId, sessionId), eq(buzzEvents.roundId, round.id)),
-    )
-    .all();
+  const ranking = getRanking(round.id);
+  const phase: QuestionPhase = round.answeringTeamId
+    ? "answering"
+    : round.awaitingNext
+      ? "awaiting_next"
+      : "open";
+  return { phase, round, ranking, winner: ranking[0] ?? null };
+}
 
-  const ranking = rankBuzzes(rows);
-
+export function getRoundStateEvent(
+  sessionId: string,
+): Extract<SessionEvent, { type: "round.state" }> | null {
+  const status = getRoundStatus(sessionId);
+  if (!status.round) return null;
   return {
-    phase: ranking.length > 0 ? "locked" : "open",
-    round,
-    ranking,
-    winner: ranking[0] ?? null,
+    type: "round.state",
+    at: new Date().toISOString(),
+    phase: status.phase,
+    round: toRoundDto(status.round),
+    ranking: status.ranking.map(toBuzzEventDto),
   };
 }
 
-export type ResetRoundOutcome = {
-  /** Ronde yang ditutup, atau `null` bila memang tidak ada soal aktif. */
-  closed: RoundRow | null;
-};
+export type ResetRoundOutcome = { closed: RoundRow | null };
 
-/**
- * Kosongkan/ulang ronde: tutup soal yang sedang terbuka.
- *
- * Karena tidak ada lagi ronde terbuka, urutan jawab dianggap bersih dan tombol
- * semua regu kembali ke keadaan siap menunggu tanpa menghapus catatan sejarah.
- */
 export function resetRound(sessionId: string): ResetRoundOutcome {
   return db.transaction((tx) => {
     const round = tx
@@ -97,55 +104,273 @@ export function resetRound(sessionId: string): ResetRoundOutcome {
       .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
       .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
       .get();
-
-    if (!round) {
-      return { closed: null } as const;
-    }
+    if (!round) return { closed: null } as const;
 
     const now = new Date();
     tx.update(rounds)
-      .set({ status: "closed", endedAt: now })
+      .set({
+        status: "closed",
+        answeringTeamId: null,
+        answerStartedAt: null,
+        awaitingNext: false,
+        endedAt: now,
+      })
       .where(eq(rounds.id, round.id))
       .run();
-
-    return { closed: { ...round, status: "closed", endedAt: now } } as const;
+    return {
+      closed: {
+        ...round,
+        status: "closed",
+        answeringTeamId: null,
+        answerStartedAt: null,
+        awaitingNext: false,
+        endedAt: now,
+      },
+    } as const;
   });
 }
 
 export function openRound(input: OpenRoundInput): OpenRoundOutcome {
-  const { sessionId } = input;
-
   return db.transaction((tx) => {
-    const now = new Date();
+    const session = tx
+      .select({ status: sessions.status })
+      .from(sessions)
+      .where(eq(sessions.id, input.sessionId))
+      .get();
+    if (!session || session.status !== "active") {
+      return { status: "inactive_session" } as const;
+    }
 
-    // Tutup ronde yang masih terbuka supaya hanya ada satu soal aktif.
-    // Inilah "reset kunci": membuka soal baru membuka kembali kunci semua regu.
+    const now = new Date();
     tx.update(rounds)
-      .set({ status: "closed", endedAt: now })
-      .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
+      .set({
+        status: "closed",
+        answeringTeamId: null,
+        answerStartedAt: null,
+        awaitingNext: false,
+        endedAt: now,
+      })
+      .where(and(eq(rounds.sessionId, input.sessionId), eq(rounds.status, "open")))
       .run();
 
     const lastRound = tx
       .select()
       .from(rounds)
-      .where(eq(rounds.sessionId, sessionId))
+      .where(eq(rounds.sessionId, input.sessionId))
       .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
       .get();
-
-    const orderNumber = lastRound ? lastRound.orderNumber + 1 : 1;
-
     const row: RoundRow = {
       id: randomUUID(),
-      sessionId,
-      orderNumber,
+      sessionId: input.sessionId,
+      orderNumber: lastRound ? lastRound.orderNumber + 1 : 1,
       status: "open",
       startedAt: now,
+      answeringTeamId: null,
+      answerStartedAt: null,
+      awaitingNext: false,
       endedAt: null,
       createdAt: now,
     };
-
     tx.insert(rounds).values(row).run();
-
     return { status: "opened", row } as const;
+  });
+}
+
+export type SelectTeamOutcome =
+  | { status: "selected"; round: RoundRow }
+  | { status: "no_open_round" | "team_not_buzzed" | "already_answered" | "answer_in_progress" };
+
+export function selectAnsweringTeam(
+  sessionId: string,
+  teamId: string,
+): SelectTeamOutcome {
+  return db.transaction((tx) => {
+    const round = tx
+      .select()
+      .from(rounds)
+      .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
+      .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
+      .get();
+    if (!round) return { status: "no_open_round" } as const;
+
+    const candidate = tx
+      .select()
+      .from(buzzEvents)
+      .where(
+        and(
+          eq(buzzEvents.roundId, round.id),
+          eq(buzzEvents.teamId, teamId),
+        ),
+      )
+      .get();
+    if (!candidate) return { status: "team_not_buzzed" } as const;
+    if (candidate.answerStatus !== null) return { status: "already_answered" } as const;
+
+    if (round.answeringTeamId === teamId) {
+      return { status: "answer_in_progress" } as const;
+    }
+
+    const now = new Date();
+    if (round.answeringTeamId) {
+      tx.update(buzzEvents)
+        .set({ answerStatus: "timeout" })
+        .where(
+          and(
+            eq(buzzEvents.roundId, round.id),
+            eq(buzzEvents.teamId, round.answeringTeamId),
+          ),
+        )
+        .run();
+    }
+
+    tx.update(rounds)
+      .set({
+        answeringTeamId: teamId,
+        answerStartedAt: now,
+        awaitingNext: false,
+      })
+      .where(eq(rounds.id, round.id))
+      .run();
+    return {
+      status: "selected",
+      round: {
+        ...round,
+        answeringTeamId: teamId,
+        answerStartedAt: now,
+        awaitingNext: false,
+      },
+    } as const;
+  });
+}
+
+type AdvanceOutcome =
+  | { status: "advanced"; round: RoundRow; team: BuzzEventRow }
+  | { status: "waiting"; round: RoundRow }
+  | { status: "no_open_round" | "not_waiting" | "no_candidate" };
+
+export function advanceToNextTeam(sessionId: string): AdvanceOutcome {
+  return db.transaction((tx) => {
+    const round = tx
+      .select()
+      .from(rounds)
+      .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
+      .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
+      .get();
+    if (!round) return { status: "no_open_round" } as const;
+    if (!round.awaitingNext) return { status: "not_waiting" } as const;
+
+    const ranking = rankBuzzes(
+      tx.select().from(buzzEvents).where(eq(buzzEvents.roundId, round.id)).all(),
+    );
+    const candidate = nextAvailableTeam(ranking);
+    if (!candidate) return { status: "no_candidate" } as const;
+
+    const now = new Date();
+    tx.update(rounds)
+      .set({
+        answeringTeamId: candidate.teamId,
+        answerStartedAt: now,
+        awaitingNext: false,
+      })
+      .where(eq(rounds.id, round.id))
+      .run();
+    return {
+      status: "advanced",
+      team: candidate,
+      round: {
+        ...round,
+        answeringTeamId: candidate.teamId,
+        answerStartedAt: now,
+        awaitingNext: false,
+      },
+    } as const;
+  });
+}
+
+export type AnswerOutcome =
+  | { status: "recorded"; round: RoundRow; team: TeamRow; delta: number }
+  | { status: "no_open_round" | "no_answering_team" | "invalid_penalty" | "unknown_team" };
+
+export function recordAnswerResult(
+  sessionId: string,
+  result: "correct" | "wrong",
+  penalty?: number,
+): AnswerOutcome {
+  if (result === "wrong" && ![50, 75, 100].includes(penalty ?? 0)) {
+    return { status: "invalid_penalty" };
+  }
+
+  return db.transaction((tx) => {
+    const round = tx
+      .select()
+      .from(rounds)
+      .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
+      .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
+      .get();
+    if (!round) return { status: "no_open_round" } as const;
+    if (!round.answeringTeamId || !round.answerStartedAt) {
+      return { status: "no_answering_team" } as const;
+    }
+
+    const buzz = tx
+      .select()
+      .from(buzzEvents)
+      .where(
+        and(
+          eq(buzzEvents.roundId, round.id),
+          eq(buzzEvents.teamId, round.answeringTeamId),
+        ),
+      )
+      .get();
+    const team = tx
+      .select()
+      .from(teams)
+      .where(and(eq(teams.id, round.answeringTeamId), eq(teams.sessionId, sessionId)))
+      .get();
+    if (!buzz || !team || buzz.answerStatus !== null) {
+      return { status: "no_answering_team" } as const;
+    }
+
+    const delta = result === "correct" ? 100 : -(penalty ?? 0);
+    const now = new Date();
+    const updatedTeam = { ...team, score: team.score + delta };
+    tx.update(teams).set({ score: updatedTeam.score }).where(eq(teams.id, team.id)).run();
+    tx.update(buzzEvents)
+      .set({ answerStatus: result })
+      .where(eq(buzzEvents.id, buzz.id))
+      .run();
+
+    const updatedRound: RoundRow =
+      result === "correct"
+        ? {
+            ...round,
+            status: "closed",
+            answeringTeamId: null,
+            answerStartedAt: null,
+            awaitingNext: false,
+            endedAt: now,
+          }
+        : {
+            ...round,
+            answeringTeamId: null,
+            answerStartedAt: null,
+            awaitingNext: true,
+          };
+    tx.update(rounds)
+      .set({
+        status: updatedRound.status,
+        answeringTeamId: updatedRound.answeringTeamId,
+        answerStartedAt: updatedRound.answerStartedAt,
+        awaitingNext: updatedRound.awaitingNext,
+        endedAt: updatedRound.endedAt,
+      })
+      .where(eq(rounds.id, round.id))
+      .run();
+    return {
+      status: "recorded",
+      round: updatedRound,
+      team: updatedTeam,
+      delta,
+    } as const;
   });
 }

@@ -1,10 +1,4 @@
-/**
- * Logika server untuk regu dan skor.
- *
- * Moderator menambah/mengurangi poin regu saat lomba berjalan. Perubahan skor
- * disiarkan lewat SSE supaya papan skor moderator dan layar penonton ikut
- * bergerak seketika.
- */
+/** Logika server untuk pengelolaan regu. */
 
 import "server-only";
 
@@ -412,17 +406,14 @@ export function removeTeam(input: RemoveTeamInput): RemoveTeamOutcome {
   });
 }
 
-/** Masukan pembaruan skor. */
+/** Masukan pembaruan skor internal yang tidak lagi digunakan oleh API live. */
 export type UpdateScoreInput = {
   sessionId: string;
   teamId: string;
-  /** Poin eksplisit; dipakai bila `outcome` tidak diberikan. */
   delta?: number;
-  /** Aturan sesi yang dipakai bila `delta` tidak diberikan. */
   outcome?: "correct" | "wrong";
 };
 
-/** Hasil pembaruan skor. */
 export type UpdateScoreOutcome =
   | { status: "updated"; row: TeamRow; delta: number }
   | { status: "unknown_team"; teamId: string }

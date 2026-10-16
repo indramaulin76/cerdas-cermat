@@ -6,7 +6,7 @@ import type {
   UpdateTeamRequest,
   UpdateTeamResponse,
 } from "@/lib/ccl/api";
-import { requireModerator } from "@/server/auth";
+import { requireModeratorOrAdmin } from "@/server/admin-auth";
 import { publish } from "@/server/events";
 import {
   removeTeam,
@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const gate = await requireModerator(sessionId);
+  const gate = await requireModeratorOrAdmin(sessionId);
   if (!gate.ok) {
     return errorResponse(gate.error, gate.message, gate.status);
   }
@@ -143,7 +143,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const gate = await requireModerator(sessionId);
+  const gate = await requireModeratorOrAdmin(sessionId);
   if (!gate.ok) {
     return errorResponse(gate.error, gate.message, gate.status);
   }

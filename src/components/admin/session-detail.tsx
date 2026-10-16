@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -15,304 +15,183 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { SettingsForm } from "@/components/admin/settings-form";
+import { TeamManager } from "@/components/admin/team-manager";
 import { Button } from "@/components/ui/button";
+import type { SessionDetailDto, TeamDto } from "@/lib/ccl/api";
+import { sessionDetailPath, teamsPath } from "@/lib/ccl/api";
+import { ROLE_INFO, ROLE_ORDER, type RoleId } from "@/lib/ccl/roles";
 import { formatSessionDate } from "@/lib/ccl/format";
-import { ROLE_INFO, type RoleId } from "@/lib/ccl/roles";
-import {
-  SESSION_STATUS_CLASS,
-  SESSION_STATUS_LABEL,
-} from "@/lib/ccl/session-status";
-import { type CopyFeedback, useCopyToClipboard } from "@/lib/ccl/use-copy";
-import {
-  getCreatedSession,
-  subscribeCreatedSessions,
-} from "@/lib/mock/session-store";
-import {
-  buildMockSessionDetail,
-  type SessionDetail as SessionDetailData,
-} from "@/lib/mock/sessions";
+import { SESSION_STATUS_CLASS, SESSION_STATUS_LABEL } from "@/lib/ccl/session-status";
+import { useCopyToClipboard } from "@/lib/ccl/use-copy";
 
-/**
- * Halaman detail sesi untuk admin.
- *
- * Menampilkan tiga link akses (moderator, layar penonton, HP regu) beserta PIN
- * masing-masing dalam satu tampilan, siap dibagikan. Sesi yang dibuat admin
- * (tersimpan di localStorage) juga bisa dibuka di sini.
- */
-
-const noopSubscribe = () => () => {};
-
-/** Alamat asal situs di klien (kosong saat SSR) untuk menampilkan link utuh. */
-function useOrigin(): string {
-  return useSyncExternalStore(
-    noopSubscribe,
-    () => window.location.origin,
-    () => "",
-  );
-}
-
-/** Apakah komponen sudah berjalan di klien (false saat SSR). */
-function useIsClient(): boolean {
-  return useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
-}
-
-/** Ikon tiap peran agar tidak tertukar (warna aksen dari ROLE_INFO). */
 const ROLE_ICON: Record<RoleId, LucideIcon> = {
   moderator: LayoutDashboard,
   viewer: MonitorPlay,
   team: Smartphone,
 };
+const subscribeToOrigin = () => () => {};
+const getBrowserOrigin = () => window.location.origin;
 
-/** Tombol ikon untuk menyalin satu nilai (link atau PIN). */
-function CopyIconButton({
-  label,
-  copied,
-  onCopy,
-}: {
-  label: string;
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      aria-label={label}
-      title={label}
-      onClick={onCopy}
-      className={copied ? "text-emerald-300" : "text-muted-foreground"}
-    >
-      {copied ? (
-        <Check className="size-4" aria-hidden />
-      ) : (
-        <Copy className="size-4" aria-hidden />
-      )}
-    </Button>
-  );
-}
-
-function RoleCard({
-  role,
-  origin,
-  copy,
-  feedback,
-}: {
-  role: SessionDetailData["roles"][number];
-  origin: string;
-  copy: (text: string, key: string) => void;
-  feedback: CopyFeedback | null;
-}) {
-  const info = ROLE_INFO[role.role];
-  const Icon = ROLE_ICON[role.role];
-  const url = origin ? `${origin}${role.path}` : role.path;
-
-  const linkKey = `${role.role}:link`;
-  const pinKey = `${role.role}:pin`;
-  const allKey = `${role.role}:all`;
-
-  const linkCopied = feedback?.key === linkKey && feedback.status === "copied";
-  const pinCopied = feedback?.key === pinKey && feedback.status === "copied";
-  const allState = feedback?.key === allKey ? feedback.status : null;
-
-  const combined = `${role.label}\nLink: ${url}\nPIN: ${role.pin}`;
-
-  return (
-    <div
-      className={`flex h-full flex-col gap-4 rounded-2xl border p-4 backdrop-blur transition-colors sm:p-5 ${info.accent.card}`}
-    >
-      <div className="flex items-start gap-3">
-        <span
-          className={`grid size-10 shrink-0 place-items-center rounded-xl ${info.accent.badge}`}
-        >
-          <Icon className="size-5" aria-hidden />
-        </span>
-        <div className="min-w-0">
-          <h2 className="text-sm font-bold">{role.label}</h2>
-          <p className="text-xs leading-snug text-muted-foreground">
-            {role.description}
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Link
-        </span>
-        <div className="flex items-center gap-1">
-          <p className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/25 px-2.5 py-2 font-mono text-xs leading-relaxed break-all text-foreground/90">
-            {url}
-          </p>
-          <CopyIconButton
-            label={`Salin link ${role.label}`}
-            copied={linkCopied}
-            onCopy={() => copy(url, linkKey)}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          <KeyRound className="size-3.5" aria-hidden />
-          PIN
-        </span>
-        <div className="flex items-center justify-between gap-1">
-          <p className="font-mono text-2xl font-black tracking-[0.25em] tabular-nums sm:text-3xl sm:tracking-[0.35em]">
-            {role.pin}
-          </p>
-          <CopyIconButton
-            label={`Salin PIN ${role.label}`}
-            copied={pinCopied}
-            onCopy={() => copy(role.pin, pinKey)}
-          />
-        </div>
-      </div>
-
-      <Button
-        type="button"
-        variant="secondary"
-        className="mt-auto h-9 w-full"
-        onClick={() => copy(combined, allKey)}
-      >
-        {allState === "copied" ? (
-          <>
-            <Check className="size-4" aria-hidden />
-            Tersalin
-          </>
-        ) : allState === "error" ? (
-          <>Gagal menyalin</>
-        ) : (
-          <>
-            <Copy className="size-4" aria-hidden />
-            Salin link &amp; PIN
-          </>
-        )}
-      </Button>
-    </div>
-  );
-}
-
-export function SessionDetail({
-  sessionId,
-  initialDetail,
-}: {
-  sessionId: string;
-  initialDetail: SessionDetailData | null;
-}) {
-  const origin = useOrigin();
-  const isClient = useIsClient();
+export function SessionDetail({ sessionId }: { sessionId: string }) {
+  const [session, setSession] = useState<SessionDetailDto | null>(null);
+  const [teams, setTeams] = useState<TeamDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const { copy, feedback } = useCopyToClipboard();
-  // Sesi buatan admin hanya ada di localStorage; baca dengan aman saat hidrasi.
-  const stored = useSyncExternalStore(
-    subscribeCreatedSessions,
-    () => getCreatedSession(sessionId),
-    () => null,
-  );
+  const origin = useSyncExternalStore(subscribeToOrigin, getBrowserOrigin, () => "");
 
-  const detail =
-    initialDetail ?? (stored ? buildMockSessionDetail(stored) : null);
-  const ready = detail !== null || isClient;
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fetch(sessionDetailPath(sessionId), { credentials: "same-origin" }),
+      fetch(teamsPath(sessionId), { credentials: "same-origin" }),
+    ])
+      .then(async ([sessionResponse, teamsResponse]) => {
+        const sessionResult = (await sessionResponse.json()) as {
+          session?: SessionDetailDto;
+          message?: string;
+        };
+        const teamsResult = (await teamsResponse.json()) as {
+          teams?: TeamDto[];
+          message?: string;
+        };
+        if (!sessionResponse.ok) throw new Error(sessionResult.message ?? "Gagal memuat sesi.");
+        if (!teamsResponse.ok) throw new Error(teamsResult.message ?? "Gagal memuat regu.");
+        if (active) {
+          setSession(sessionResult.session ?? null);
+          setTeams(teamsResult.teams ?? []);
+        }
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(reason instanceof Error ? reason.message : "Gagal memuat sesi.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionId]);
+
+  async function updateStatus(status: SessionDetailDto["status"]) {
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(sessionDetailPath(sessionId), {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const result = (await response.json()) as { session?: SessionDetailDto; message?: string };
+      if (!response.ok || !result.session) throw new Error(result.message ?? "Gagal mengubah status sesi.");
+      setSession(result.session);
+      setNotice("Status sesi diperbarui.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Gagal mengubah status sesi.");
+    }
+  }
+
+  if (loading) {
+    return <main className="grid min-h-dvh place-items-center text-sm text-muted-foreground">Memuat sesi…</main>;
+  }
+  if (error && !session) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col justify-center gap-4 px-5 text-foreground">
+        <p role="alert" className="text-sm text-destructive">{error}</p>
+        <Link href="/sesi" className="text-sm underline">Kembali ke daftar sesi</Link>
+      </main>
+    );
+  }
+  if (!session) return null;
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(120%_110%_at_50%_-20%,color-mix(in_oklch,var(--color-primary)_16%,transparent),transparent_60%)]" />
-      </div>
-
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8 sm:py-10">
-        <Link
-          href="/sesi"
-          className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-          Semua sesi
+    <main className="relative flex min-h-dvh flex-col bg-background text-foreground">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-7 px-5 py-8 sm:px-8">
+        <Link href="/sesi" className="inline-flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" aria-hidden />Semua sesi
         </Link>
 
-        {!ready ? (
-          <p className="text-sm text-muted-foreground">Memuat sesi…</p>
-        ) : !detail ? (
-          <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 px-5 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              Sesi tidak ditemukan atau sudah dihapus.
-            </p>
-            <Link
-              href="/sesi"
-              className="mt-3 inline-block text-sm font-semibold text-fuchsia-300 hover:underline"
-            >
-              Kembali ke daftar sesi
-            </Link>
+        <header className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-black sm:text-3xl">{session.title}</h1>
+            <span className={`rounded-full border px-2.5 py-1 text-xs ${SESSION_STATUS_CLASS[session.status]}`}>
+              {SESSION_STATUS_LABEL[session.status]}
+            </span>
           </div>
-        ) : (
-          <>
-            <header className="space-y-3">
-              <Badge variant="outline" className="text-muted-foreground">
-                Fase 3 · data tiruan
-              </Badge>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <h1 className="text-2xl font-black tracking-tight break-words sm:text-3xl">
-                  {detail.session.title}
-                </h1>
-                <span
-                  className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${SESSION_STATUS_CLASS[detail.session.status]}`}
-                >
-                  {SESSION_STATUS_LABEL[detail.session.status]}
-                </span>
-              </div>
-              <p className="max-w-prose text-sm text-muted-foreground">
-                Bagikan link berikut ke tiap peran. Tiap link hanya bisa dibuka
-                dengan PIN-nya masing-masing.
-              </p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <Users className="size-3.5" aria-hidden />
-                  {detail.session.teamCount} regu
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays className="size-3.5" aria-hidden />
-                  Dibuat {formatSessionDate(detail.session.createdAt)}
-                </span>
-              </div>
-            </header>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><Users className="size-3.5" aria-hidden />{teams.length} regu</span>
+            <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-3.5" aria-hidden />Dibuat {formatSessionDate(session.createdAt)}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {session.status === "draft" ? <Button type="button" onClick={() => updateStatus("active")}>Aktifkan lomba</Button> : null}
+            {session.status === "active" ? <Button type="button" variant="outline" onClick={() => updateStatus("finished")}>Selesaikan lomba</Button> : null}
+            {session.status === "finished" ? <Button type="button" variant="outline" onClick={() => updateStatus("draft")}>Kembalikan ke draft</Button> : null}
+          </div>
+          {notice ? <p role="status" className="text-sm text-emerald-300">{notice}</p> : null}
+          {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+        </header>
 
-            <section aria-label="Link dan PIN tiap peran" className="space-y-3">
-              <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                Bagikan akses
-              </h2>
-              <div className="grid items-stretch gap-4 sm:gap-5 md:grid-cols-3">
-                {detail.roles.map((role) => (
-                  <RoleCard
-                    key={role.role}
-                    role={role}
-                    origin={origin}
-                    copy={copy}
-                    feedback={feedback}
-                  />
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Link dan PIN tetap sama tiap kali kamu membuka sesi ini, jadi
-                aman untuk dibagikan dan disimpan.
-              </p>
-            </section>
+        <section aria-label="Tautan dan PIN akses" className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Bagikan akses peran</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {ROLE_ORDER.map((role) => {
+              const Icon = ROLE_ICON[role];
+              const info = ROLE_INFO[role];
+              const path = session.links[role];
+              const copied = feedback?.key === `${role}:all` && feedback.status === "copied";
+              return (
+                <article key={role} className={`flex flex-col gap-4 rounded-2xl border p-4 ${info.accent.card}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`grid size-10 place-items-center rounded-xl ${info.accent.badge}`}><Icon className="size-5" aria-hidden /></span>
+                    <div><h3 className="font-bold">{info.label}</h3><p className="text-xs text-muted-foreground">{info.description}</p></div>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold uppercase text-muted-foreground">Link</span>
+                    <p className="rounded-lg border border-white/10 bg-black/20 p-2 font-mono text-xs break-all">{origin}{path}</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground"><KeyRound className="size-3.5" aria-hidden />PIN</span>
+                    <span className="font-mono text-2xl font-black tracking-[0.3em]">{session.pins[role]}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-auto"
+                    onClick={() => void copy(`${info.label}\nLink: ${window.location.origin}${path}\nPIN: ${session.pins[role]}`, `${role}:all`)}
+                  >
+                    {copied ? <><Check className="size-4" aria-hidden />Tersalin</> : <><Copy className="size-4" aria-hidden />Salin link &amp; PIN</>}
+                  </Button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
-            {/* Konfirmasi salin untuk pembaca layar. */}
-            <p aria-live="polite" className="sr-only">
-              {feedback
-                ? feedback.status === "copied"
-                  ? "Tersalin ke papan klip."
-                  : "Gagal menyalin."
-                : ""}
-            </p>
-          </>
-        )}
+        <section className="space-y-3">
+          <h2 className="text-lg font-black">Regu peserta</h2>
+          <TeamManager
+            key={session.id}
+            sessionId={session.id}
+            initialTeams={teams.map(({ id, name, color, score }) => ({ id, name, color, score }))}
+            maxTeams={10}
+          />
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-black">Aturan lomba</h2>
+          <SettingsForm
+            sessionId={session.id}
+            sessionTitle={session.title}
+            settings={{
+              cooldownSeconds: session.cooldownSeconds,
+              correctPoints: session.correctPoints,
+              wrongPoints: session.wrongPoints,
+            }}
+          />
+        </section>
       </div>
     </main>
   );

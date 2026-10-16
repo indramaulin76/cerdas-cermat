@@ -1,242 +1,148 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronRight, Plus, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  SESSION_STATUS_CLASS,
-  SESSION_STATUS_LABEL,
-} from "@/lib/ccl/session-status";
+import { SESSION_STATUS_CLASS, SESSION_STATUS_LABEL } from "@/lib/ccl/session-status";
+import type { SessionSummaryDto } from "@/lib/ccl/api";
+import { sessionsPath } from "@/lib/ccl/api";
 import { formatSessionDate } from "@/lib/ccl/format";
-import type { SessionSummary } from "@/lib/ccl/types";
-import {
-  addCreatedSession,
-  getCreatedSessions,
-  getServerCreatedSessions,
-  mergeSessions,
-  subscribeCreatedSessions,
-} from "@/lib/mock/session-store";
-
-/**
- * Halaman daftar sesi untuk admin.
- *
- * Menampilkan semua sesi lomba milik admin beserta status, jumlah regu, dan
- * waktu pembuatannya, serta form untuk membuat sesi baru (data tiruan). Sesi
- * baru langsung muncul di daftar dengan status "belum dimulai" (draft) dan
- * disimpan di localStorage agar bisa dibuka lagi di halaman detail.
- */
-
-/** Id sesi baru yang aman untuk URL, dari nama acara + akhiran acak. */
-function newSessionId(title: string): string {
-  const slug =
-    title
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 32) || "sesi";
-  const suffix =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID().slice(0, 6)
-      : Math.random().toString(36).slice(2, 8);
-  return `${slug}-${suffix}`;
-}
-
-/** Urutkan sesi dari yang terbaru. */
-function sortSessions(sessions: SessionSummary[]): SessionSummary[] {
-  return [...sessions].sort(
-    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-  );
-}
 
 export function SessionList() {
-  const created = useSyncExternalStore(
-    subscribeCreatedSessions,
-    getCreatedSessions,
-    getServerCreatedSessions,
-  );
+  const router = useRouter();
+  const [sessions, setSessions] = useState<SessionSummaryDto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const sessions = useMemo(() => sortSessions(mergeSessions(created)), [created]);
-
-  const resetForm = () => {
-    setTitle("");
-    setError(null);
-  };
-
-  const openForm = () => {
-    setNotice(null);
-    setError(null);
-    setShowForm(true);
-  };
-
-  const cancelForm = () => {
-    resetForm();
-    setShowForm(false);
-  };
-
-  const handleCreate = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const trimmed = title.trim();
-    if (!trimmed) {
-      setError("Nama acara wajib diisi.");
-      return;
-    }
-    if (trimmed.length > 80) {
-      setError("Nama acara terlalu panjang (maksimal 80 karakter).");
-      return;
-    }
-
-    const session: SessionSummary = {
-      id: newSessionId(trimmed),
-      title: trimmed,
-      // Sesi baru selalu mulai sebagai draft sampai admin mengaktifkannya.
-      status: "draft",
-      createdAt: new Date().toISOString(),
-      teamCount: 0,
+  useEffect(() => {
+    let active = true;
+    fetch(sessionsPath(), { credentials: "same-origin" })
+      .then(async (response) => {
+        const result = (await response.json()) as {
+          sessions?: SessionSummaryDto[];
+          message?: string;
+        };
+        if (!response.ok) throw new Error(result.message ?? "Gagal memuat daftar sesi.");
+        if (active) setSessions(result.sessions ?? []);
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(reason instanceof Error ? reason.message : "Gagal memuat daftar sesi.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
     };
+  }, []);
 
-    addCreatedSession(session);
-    setShowForm(false);
-    resetForm();
-    setNotice(`Sesi "${trimmed}" berhasil dibuat.`);
-  };
+  async function createSession(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch(sessionsPath(), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      const result = (await response.json()) as {
+        session?: { id: string };
+        message?: string;
+      };
+      if (!response.ok || !result.session) {
+        throw new Error(result.message ?? "Gagal membuat sesi.");
+      }
+      router.push(`/sesi/${encodeURIComponent(result.session.id)}`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Gagal membuat sesi.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
-      {/* Latar bercahaya. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(120%_110%_at_50%_-20%,color-mix(in_oklch,var(--color-primary)_16%,transparent),transparent_60%)]" />
-      </div>
-
-      <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8 lg:max-w-4xl">
+    <main className="relative flex min-h-dvh flex-col bg-background text-foreground">
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-2">
-            <Badge variant="outline" className="text-muted-foreground">
-              Fase 3 · data tiruan
-            </Badge>
-            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
-              Sesi &amp; Link
-            </h1>
+            <Badge variant="outline" className="text-muted-foreground">Sesi tersimpan</Badge>
+            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Sesi &amp; Link</h1>
             <p className="max-w-prose text-sm text-muted-foreground">
-              Semua sesi lomba yang kamu buat. Buka satu sesi untuk melihat link
-              dan PIN tiap peran.
+              Buat sesi, kelola regu dan pengaturan, lalu bagikan link serta PIN tiap peran.
             </p>
           </div>
-          <Button
+          <button
             type="button"
-            onClick={openForm}
-            disabled={showForm}
-            className="h-10"
+            onClick={() => {
+              setShowForm((value) => !value);
+              setError(null);
+            }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-foreground px-4 text-sm font-bold text-background"
           >
-            <Plus />
+            <Plus className="size-4" aria-hidden />
             Buat Sesi
-          </Button>
+          </button>
         </header>
 
         {showForm ? (
-          <form
-            onSubmit={handleCreate}
-            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur sm:p-5"
-          >
-            <label
-              htmlFor="session-title"
-              className="text-sm font-semibold"
-            >
-              Nama acara
-            </label>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Mis. &ldquo;Cerdas Cermat Live — Babak Penyisihan&rdquo;.
-            </p>
+          <form onSubmit={createSession} className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <label htmlFor="session-title" className="block text-sm font-semibold">Nama acara</label>
             <input
               id="session-title"
-              type="text"
-              value={title}
-              onChange={(event) => {
-                setTitle(event.target.value);
-                if (error) setError(null);
-              }}
               autoFocus
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "session-title-error" : undefined}
-              placeholder="Nama acara lomba"
-              className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm font-semibold outline-none transition-colors focus-visible:border-fuchsia-400 focus-visible:ring-2 focus-visible:ring-fuchsia-400/30 aria-invalid:border-destructive"
+              required
+              maxLength={80}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Contoh: Babak Penyisihan"
+              className="h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400/60"
             />
-            {error ? (
-              <p
-                id="session-title-error"
-                className="mt-1 text-xs text-destructive"
-              >
-                {error}
-              </p>
-            ) : null}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button type="submit">Buat Sesi</Button>
-              <Button type="button" variant="outline" onClick={cancelForm}>
-                Batal
-              </Button>
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" disabled={busy} className="rounded-xl bg-foreground px-4 py-2 text-sm font-bold text-background disabled:opacity-50">
+                {busy ? "Membuat…" : "Buat sesi"}
+              </button>
+              <button type="button" onClick={() => setShowForm(false)} className="rounded-xl border border-white/10 px-4 py-2 text-sm">Batal</button>
             </div>
           </form>
         ) : null}
 
-        <p
-          role="status"
-          aria-live="polite"
-          className="min-h-5 text-sm text-muted-foreground"
-        >
-          {notice}
-        </p>
+        {error ? (
+          <div role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">
+            {error} {error.includes("Masuk") || error.includes("panitia") ? <Link href="/" className="underline">Kembali ke login</Link> : null}
+          </div>
+        ) : null}
 
-        {sessions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 px-5 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              Belum ada sesi. Buat sesi lomba untuk memulai.
-            </p>
+        {loading ? <p className="text-sm text-muted-foreground">Memuat daftar sesi…</p> : null}
+        {!loading && sessions.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/15 p-10 text-center text-sm text-muted-foreground">
+            Belum ada sesi tersimpan. Buat sesi pertama untuk memulai.
           </div>
         ) : (
           <ul className="grid gap-3">
             {sessions.map((session) => (
               <li key={session.id}>
-                <Link
-                  href={`/sesi/${encodeURIComponent(session.id)}`}
-                  className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur transition-colors hover:border-white/20 hover:bg-white/[0.07] focus-visible:ring-2 focus-visible:ring-fuchsia-400/60 focus-visible:outline-none sm:p-5"
-                >
+                <Link href={`/sesi/${encodeURIComponent(session.id)}`} className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-white/20 hover:bg-white/[0.07] sm:p-5">
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="truncate text-base font-bold sm:text-lg">
-                        {session.title}
-                      </h2>
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${SESSION_STATUS_CLASS[session.status]}`}
-                      >
+                      <h2 className="truncate font-bold">{session.title}</h2>
+                      <span className={`rounded-full border px-2.5 py-0.5 text-xs ${SESSION_STATUS_CLASS[session.status]}`}>
                         {SESSION_STATUS_LABEL[session.status]}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Users className="size-3.5" aria-hidden />
-                        {session.teamCount} regu
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <CalendarDays className="size-3.5" aria-hidden />
-                        Dibuat {formatSessionDate(session.createdAt)}
-                      </span>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5"><Users className="size-3.5" aria-hidden />{session.teamCount} regu</span>
+                      <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-3.5" aria-hidden />{formatSessionDate(session.createdAt)}</span>
                     </div>
                   </div>
-                  <ChevronRight
-                    className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                    aria-hidden
-                  />
+                  <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1" aria-hidden />
                 </Link>
               </li>
             ))}

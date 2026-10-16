@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import type { ApiErrorResponse, TeamStatusResponse } from "@/lib/ccl/api";
+import { requireTeam } from "@/server/auth";
 import { getTeamStatus } from "@/server/status";
 
 type RouteParams = { params: Promise<{ sessionId: string; teamId: string }> };
@@ -18,6 +19,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!sessionId || !teamId) {
     return errorResponse("invalid_params", "Session id dan team id wajib diisi.", 400);
   }
+  const gate = await requireTeam(sessionId);
+  if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
 
   const outcome = getTeamStatus({ sessionId, teamId });
 

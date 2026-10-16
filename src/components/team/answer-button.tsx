@@ -117,8 +117,12 @@ export function AnswerButton({
 
       <button
         type="button"
-        onPointerDown={handlePress}
-        onClick={handlePress}
+        onPointerDown={(event) => {
+          if (event.button === 0) handlePress();
+        }}
+        onClick={(event) => {
+          if (event.detail === 0) handlePress();
+        }}
         disabled={!armed}
         aria-label={ariaLabel}
         className={cn(

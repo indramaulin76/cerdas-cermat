@@ -2,10 +2,7 @@
  * Kontrak API Cerdas Cermat Live.
  *
  * Tipe di sini dipakai bersama oleh klien (dashboard regu/moderator/penonton)
- * dan route handler di server, supaya bentuk permintaan & balasan selalu
- * konsisten. Dashboard regu masih berjalan di atas data tiruan, tetapi
- * kontrak ini sengaja dibuat final agar UI tidak perlu berubah saat tersambung
- * ke server sungguhan.
+ * dan route handler di server supaya bentuk permintaan dan balasan konsisten.
  */
 
 import type { RoleId } from "@/lib/ccl/roles";
@@ -20,6 +17,8 @@ export type BuzzEventDto = {
   reactionMs: number;
   /** Penanda regu tercepat pada ronde ini. */
   isFirst: boolean;
+  /** Status giliran jawab setelah buzz, bila sudah dipilih moderator. */
+  answerStatus: "wrong" | "timeout" | "correct" | null;
   /** Waktu tekan dalam format ISO-8601. */
   createdAt: string;
 };
@@ -28,10 +27,8 @@ export type BuzzEventDto = {
 export type RecordBuzzRequest = {
   /** Regu yang menekan tombol. */
   teamId: string;
-  /** Soal/ronde yang sedang berjalan (opsional bila ronde belum dipakai). */
-  roundId?: string | null;
-  /** Kecepatan reaksi sejak soal dibuka (milidetik). */
-  reactionMs: number;
+  /** Soal/ronde yang sedang berjalan; wajib agar sinyal lama tidak masuk ronde baru. */
+  roundId: string;
 };
 
 /** Balasan sukses dari endpoint catat tekanan. */
@@ -76,6 +73,9 @@ export type RoundDto = {
   orderNumber: number;
   status: "draft" | "open" | "closed";
   startedAt: string | null;
+  answeringTeamId: string | null;
+  answerStartedAt: string | null;
+  awaitingNext: boolean;
   endedAt: string | null;
   createdAt: string;
 };
@@ -109,14 +109,14 @@ export type TeamStatusResponse = {
  * sehingga perubahan (soal dibuka, regu menekan) tampil nyaris seketika.
  */
 export type SessionEvent =
-  /** Moderator membuka soal baru: kunci regu direset & aba-aba dimulai. */
+  /** Moderator membuka sesi buzz untuk soal baru. */
   | {
       type: "round.opened";
       at: string;
       round: RoundDto;
-      /** Momen tombol mulai aktif (ISO) untuk sinkronisasi aba-aba. */
+      /** Momen tombol buzz mulai aktif (ISO). */
       armAt: string;
-      /** Lama jendela jawab (detik). */
+      /** Lama giliran menjawab (detik). */
       cooldownSeconds: number;
     }
   /** Sebuah regu menekan tombol jawab (beserta urutan terkini). */
@@ -126,6 +126,14 @@ export type SessionEvent =
       order: number;
       event: BuzzEventDto;
       /** Urutan lengkap tekanan ronde ini (indeks 0 = tercepat). */
+      ranking: BuzzEventDto[];
+    }
+  /** Status ronde berubah karena pemilihan penjawab atau hasil jawaban. */
+  | {
+      type: "round.state";
+      at: string;
+      phase: QuestionPhase;
+      round: RoundDto;
       ranking: BuzzEventDto[];
     }
   /** Moderator mengosongkan ronde: urutan & kunci kembali bersih. */
@@ -181,44 +189,30 @@ export function eventsPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/events`;
 }
 
-/** Permintaan masuk sebagai moderator memakai PIN. */
-export type ModeratorAuthRequest = {
+/* ------------------------------ Auth peran sesi ------------------------------ */
+
+/** Permintaan masuk sebagai sebuah peran memakai PIN. */
+export type RoleAuthRequest = {
   pin: string;
 };
 
-/** Balasan endpoint auth moderator. */
-export type ModeratorAuthResponse = {
+/** Balasan endpoint auth peran (moderator/penonton/regu). */
+export type RoleAuthResponse = {
   ok: true;
-  /** `true` bila permintaan ini terautentikasi sebagai moderator. */
+  /** `true` bila permintaan ini terautentikasi sebagai peran tersebut. */
   authenticated: boolean;
 };
 
-/** Endpoint autentikasi PIN moderator sebuah sesi. */
-export function moderatorAuthPath(sessionId: string): string {
-  return `/api/sessions/${encodeURIComponent(sessionId)}/auth/moderator`;
-}
-
-/** Permintaan masuk sebagai penonton memakai PIN. */
-export type ViewerAuthRequest = {
-  pin: string;
-};
-
-/** Balasan endpoint auth layar penonton. */
-export type ViewerAuthResponse = {
-  ok: true;
-  /** `true` bila permintaan ini terautentikasi sebagai penonton. */
-  authenticated: boolean;
-};
-
-/** Endpoint autentikasi PIN layar penonton sebuah sesi. */
-export function viewerAuthPath(sessionId: string): string {
-  return `/api/sessions/${encodeURIComponent(sessionId)}/auth/viewer`;
+/** Endpoint autentikasi PIN sebuah peran pada sebuah sesi. */
+export function roleAuthPath(sessionId: string, role: RoleId): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/auth/${role}`;
 }
 
 /* ------------------------------ Panitia (Admin) ------------------------------ */
 
 /** Permintaan masuk sebagai panitia (admin) memakai kata sandi bersama. */
 export type AdminLoginRequest = {
+  email: string;
   password: string;
 };
 
@@ -227,6 +221,37 @@ export type AdminAuthResponse = {
   ok: true;
   /** `true` bila permintaan ini sudah masuk sebagai panitia. */
   authenticated: boolean;
+  admin?: {
+    id: string;
+    name: string;
+    email: string;
+    role: "admin" | "panitia";
+  } | null;
+};
+
+export type AdminUserDto = {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "panitia";
+  createdAt: string;
+};
+
+export type AdminUsersResponse = {
+  ok: true;
+  users: AdminUserDto[];
+};
+
+export type SaveAdminUserRequest = {
+  id?: string;
+  name: string;
+  email: string;
+  password?: string;
+};
+
+export type SaveAdminUserResponse = {
+  ok: true;
+  user: AdminUserDto;
 };
 
 /** Endpoint autentikasi panitia (masuk/status/keluar). */
@@ -234,14 +259,21 @@ export function adminAuthPath(): string {
   return `/api/admin/auth`;
 }
 
-/** Fase soal yang sedang berjalan. */
+/** Endpoint akun panitia (daftar/buat/ubah/hapus). */
+export function adminUsersPath(): string {
+  return `/api/admin/users`;
+}
+
+/** Fase alur soal yang sedang berjalan. */
 export type QuestionPhase =
   /** Belum ada soal yang dibuka. */
   | "idle"
-  /** Soal terbuka, belum ada regu menekan. */
+  /** Regu sedang dapat menekan tombol buzz. */
   | "open"
-  /** Sudah ada regu menekan (jawaban terkunci). */
-  | "locked";
+  /** Regu terpilih sedang mendapat giliran menjawab. */
+  | "answering"
+  /** Jawaban salah; moderator perlu membuka giliran berikutnya. */
+  | "awaiting_next";
 
 /** Balasan status soal/ronde untuk moderator. */
 export type RoundStatusResponse = {
@@ -251,7 +283,7 @@ export type RoundStatusResponse = {
   /** Urutan tekanan ronde ini (indeks 0 = tercepat). */
   ranking: BuzzEventDto[];
   winner: BuzzEventDto | null;
-  /** Lama jendela jawab (detik) untuk aba-aba. */
+  /** Lama jendela jawab (detik), dimulai saat moderator memilih regu. */
   cooldownSeconds: number;
   /** Waktu server saat ini (ISO) untuk sinkronisasi jam klien. */
   serverTime: string;
@@ -353,39 +385,16 @@ export function teamPath(sessionId: string, teamId: string): string {
   )}/teams/${encodeURIComponent(teamId)}`;
 }
 
-/** Permintaan mengubah skor regu. */
-export type UpdateScoreRequest = {
-  /** Tambah/kurang poin secara langsung (mis. +100 atau -50). */
-  delta?: number;
-  /** Atau pakai aturan sesi: "correct" = correctPoints, "wrong" = wrongPoints. */
-  outcome?: "correct" | "wrong";
-};
-
-/** Balasan pembaruan skor regu. */
-export type UpdateScoreResponse = {
-  ok: true;
-  team: TeamDto;
-  /** Poin yang benar-benar diterapkan. */
-  delta: number;
-};
-
 /** Endpoint daftar regu sebuah sesi. */
 export function teamsPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/teams`;
-}
-
-/** Endpoint tambah/kurang poin regu. */
-export function scorePath(sessionId: string, teamId: string): string {
-  return `/api/sessions/${encodeURIComponent(
-    sessionId,
-  )}/teams/${encodeURIComponent(teamId)}/score`;
 }
 
 /** Bentuk sesi lomba untuk dikirim ke klien. */
 export type SessionDto = {
   id: string;
   title: string;
-  /** Jendela waktu jawab (detik) sejak soal dibuka. */
+  /** Durasi menjawab sebuah giliran (detik). */
   cooldownSeconds: number;
   /** Poin untuk jawaban benar. */
   correctPoints: number;
@@ -458,8 +467,6 @@ export function sessionDetailPath(sessionId: string): string {
 /** Permintaan mengubah pengaturan sesi. */
 export type UpdateSettingsRequest = {
   cooldownSeconds?: number;
-  correctPoints?: number;
-  wrongPoints?: number;
 };
 
 /** Balasan pengaturan sesi. */
@@ -468,7 +475,7 @@ export type UpdateSettingsResponse = {
   session: SessionDto;
 };
 
-/** Endpoint pengaturan sesi (cooldown & poin). */
+/** Endpoint pengaturan durasi menjawab sesi. */
 export function settingsPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/settings`;
 }

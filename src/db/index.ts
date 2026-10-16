@@ -1,41 +1,34 @@
 /**
- * Klien basis data SQLite (Drizzle ORM).
+ * Neon PostgreSQL client.
  *
- * Hanya boleh diimpor dari kode server (route handler / server action),
- * bukan dari komponen klien. Gunakan `import { db } from "@/db"`.
+ * DATABASE_URL must be a Neon PostgreSQL connection string. The shared pool
+ * works across warm serverless invocations without storing application state.
  */
 
 import "server-only";
 
-import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
 
 import * as schema from "./schema";
 
-/** Lokasi berkas basis data, bisa ditimpa lewat env `DATABASE_URL`. */
-const databaseUrl = process.env.DATABASE_URL ?? "./data/ccl.db";
-
-// Pastikan folder penampung ada sebelum better-sqlite3 membuka berkasnya.
+const connectionString = process.env.DATABASE_URL;
 if (
-  databaseUrl !== ":memory:" &&
-  !existsSync(/* turbopackIgnore: true */ databaseUrl)
+  !connectionString ||
+  !/^postgres(?:ql)?:\/\//i.test(connectionString)
 ) {
-  mkdirSync(/* turbopackIgnore: true */ dirname(databaseUrl), {
-    recursive: true,
-  });
+  throw new Error(
+    "DATABASE_URL harus berupa connection string PostgreSQL Neon.",
+  );
 }
 
-const sqlite = new Database(databaseUrl);
+const globalForPool = globalThis as unknown as { __cclNeonPool?: Pool };
+const pool =
+  globalForPool.__cclNeonPool ??
+  new Pool({ connectionString, max: 5 });
+globalForPool.__cclNeonPool = pool;
 
-// WAL membuat baca/tulis bersamaan lebih lancar saat lomba berlangsung,
-// dan foreign_keys memastikan relasi regu ↔ tekanan tetap konsisten.
-sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
-
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(pool, { schema });
 
 export { schema };
 export type Database = typeof db;
