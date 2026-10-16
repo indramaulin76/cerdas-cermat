@@ -138,6 +138,42 @@ export function moderatorAuthPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/auth/moderator`;
 }
 
+/** Fase soal yang sedang berjalan. */
+export type QuestionPhase =
+  /** Belum ada soal yang dibuka. */
+  | "idle"
+  /** Soal terbuka, belum ada regu menekan. */
+  | "open"
+  /** Sudah ada regu menekan (jawaban terkunci). */
+  | "locked";
+
+/** Balasan status soal/ronde untuk moderator. */
+export type RoundStatusResponse = {
+  ok: true;
+  phase: QuestionPhase;
+  round: RoundDto | null;
+  /** Urutan tekanan ronde ini (indeks 0 = tercepat). */
+  ranking: BuzzEventDto[];
+  winner: BuzzEventDto | null;
+};
+
+/** Balasan saat mengosongkan/mengulang ronde. */
+export type ResetRoundResponse = {
+  ok: true;
+  /** Id ronde yang ditutup, atau null bila tidak ada soal aktif. */
+  closedRoundId: string | null;
+};
+
+/** Endpoint status soal/ronde sebuah sesi. */
+export function roundStatusPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/round/status`;
+}
+
+/** Endpoint mengosongkan/mengulang ronde sebuah sesi. */
+export function resetRoundPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/rounds/reset`;
+}
+
 /** Endpoint membuka soal (membuka ronde baru). */
 export function openRoundPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/rounds/open`;
