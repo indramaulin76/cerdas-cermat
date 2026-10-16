@@ -28,10 +28,13 @@ function teamInitial(name: string): string {
 export function ViewerScoreboard({
   teams,
   highlightTeamId = null,
+  scoringTeamId = null,
 }: {
   teams: Team[];
   /** Id regu tercepat yang sedang disorot (opsional). */
   highlightTeamId?: string | null;
+  /** Id regu yang baru saja nilainya berubah (opsional). */
+  scoringTeamId?: string | null;
 }) {
   const standings = [...teams].sort((a, b) => b.score - a.score);
   const leaderScore = standings[0]?.score ?? 0;
@@ -42,6 +45,7 @@ export function ViewerScoreboard({
         const rank = index + 1;
         const isLeader = rank === 1 && leaderScore > 0;
         const isFastest = team.id === highlightTeamId;
+        const isScoring = team.id === scoringTeamId;
 
         return (
           <li
@@ -107,7 +111,12 @@ export function ViewerScoreboard({
               )}
             </div>
 
-            <span className="relative shrink-0 text-5xl leading-none font-black tabular-nums sm:text-6xl">
+            <span
+              className={cn(
+                "relative shrink-0 text-5xl leading-none font-black tabular-nums sm:text-6xl",
+                isScoring && "animate-ccl-pop",
+              )}
+            >
               {team.score}
             </span>
           </li>

@@ -9,13 +9,12 @@ import type { Session } from "@/lib/ccl/types";
  * Halaman utama Layar Penonton.
  *
  * Tampilan besar untuk proyektor: judul lomba, papan skor semua regu, sorotan
- * regu tercepat, dan penanda status. Pada tahap ini memakai data tiruan;
- * pembaruan skor realtime menyusul pada tugas berikutnya.
+ * regu tercepat, dan penanda status. Pada tahap ini seluruh data (termasuk
+ * pembaruan skor dan sorotan) berasal dari tiruan; nanti diganti siaran SSE.
  */
 export function ViewerScreen({ session }: { session: Session }) {
-  const { fastestTeamId } = useMockLive(session);
-  const fastestTeam =
-    session.teams.find((team) => team.id === fastestTeamId) ?? null;
+  const { teams, fastestTeamId, scoringTeamId } = useMockLive(session);
+  const fastestTeam = teams.find((team) => team.id === fastestTeamId) ?? null;
 
   return (
     <main className="relative flex min-h-dvh flex-col overflow-hidden bg-background text-foreground">
@@ -81,13 +80,14 @@ export function ViewerScreen({ session }: { session: Session }) {
             Papan Skor
           </h1>
           <p className="text-sm text-muted-foreground">
-            {session.teams.length} regu bertanding
+            {teams.length} regu bertanding
           </p>
         </div>
 
         <ViewerScoreboard
-          teams={session.teams}
+          teams={teams}
           highlightTeamId={fastestTeamId}
+          scoringTeamId={scoringTeamId}
         />
       </section>
 

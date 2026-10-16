@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "f08fdd719fb66924062d3d31573f65943c38b185",
+  "generatedForCommit": "002bb70d632768231ad35a91d456df44298fa261",
   "files": [
     {
       "path": ".gitignore",
@@ -214,9 +214,9 @@
     },
     {
       "path": "src/app/globals.css",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "css",
-      "size": 5399
+      "size": 5912
     },
     {
       "path": "src/app/layout.tsx",
@@ -238,7 +238,7 @@
     },
     {
       "path": "src/app/penonton/page.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 746
     },
@@ -292,27 +292,27 @@
     },
     {
       "path": "src/components/viewer/viewer-app.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2095
     },
     {
       "path": "src/components/viewer/viewer-pin-gate.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 4628
     },
     {
       "path": "src/components/viewer/viewer-scoreboard.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 3069
+      "size": 4124
     },
     {
       "path": "src/components/viewer/viewer-screen.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 2823
+      "size": 4107
     },
     {
       "path": "src/db/index.ts",
@@ -325,6 +325,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 5281
+    },
+    {
+      "path": "src/hooks/use-mock-live.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2009
     },
     {
       "path": "src/hooks/use-team-buzzer.ts",
@@ -346,7 +352,7 @@
     },
     {
       "path": "src/lib/mock/session.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2016
     },
