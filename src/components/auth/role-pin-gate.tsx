@@ -4,14 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 
 import { cn } from "cn";
 
+import { ROLE_INFO, type RoleId } from "@/lib/ccl/roles";
 import { AURORA_COLORS } from "@/lib/ccl/theme";
 
 /**
- * Gerbang PIN untuk membuka Layar Penonton.
+ * Gerbang PIN untuk membuka halaman peran (moderator, layar penonton, HP regu).
  *
- * Layar penonton hanya boleh dibuka oleh orang yang tahu PIN dari admin.
- * Tahap ini membandingkan PIN di sisi klien (data tiruan); validasi server
- * menyusul, sehingga PIN asli tidak pernah bocor ke perangkat penonton.
+ * Hanya orang yang tahu PIN dari admin yang boleh membuka halamannya. Tahap ini
+ * membandingkan PIN di sisi klien (data tiruan); validasi server menyusul,
+ * sehingga PIN asli tidak pernah bocor ke perangkat peran.
  */
 
 const PIN_LENGTH = 4;
@@ -20,15 +21,18 @@ const PIN_LENGTH = 4;
 const KEY_CLASS =
   "flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-2xl font-bold tabular-nums transition-transform hover:bg-white/[0.12] active:scale-95 sm:h-16 2xl:h-20 2xl:text-3xl";
 
-export function ViewerPinGate({
+export function RolePinGate({
+  role,
   title,
   expectedPin,
   onUnlock,
 }: {
+  role: RoleId;
   title: string;
   expectedPin: string;
   onUnlock: () => void;
 }) {
+  const info = ROLE_INFO[role];
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
 
@@ -89,13 +93,16 @@ export function ViewerPinGate({
         )}
       >
         <div className="text-center">
-          <p className="bg-gradient-to-r from-fuchsia-400 to-cyan-300 bg-clip-text text-xs font-semibold tracking-widest text-transparent uppercase">
-            Layar Penonton
+          <p
+            className={cn(
+              "bg-gradient-to-r bg-clip-text text-xs font-semibold tracking-widest text-transparent uppercase",
+              info.accent.gradient,
+            )}
+          >
+            {info.label}
           </p>
           <h1 className="mt-1 text-lg font-bold">{title}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Masukkan PIN dari admin untuk membuka layar.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{info.gateHint}</p>
         </div>
 
         {/* Titik PIN */}
@@ -110,7 +117,10 @@ export function ViewerPinGate({
               className={cn(
                 "size-4 rounded-full border-2 transition-colors",
                 index < pin.length
-                  ? "border-transparent bg-gradient-to-br from-fuchsia-500 to-cyan-400"
+                  ? cn(
+                      "border-transparent bg-gradient-to-br",
+                      info.accent.gradient,
+                    )
                   : "border-white/20 bg-transparent",
                 error && "border-destructive bg-destructive",
               )}

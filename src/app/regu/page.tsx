@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
+import { RoleGate } from "@/components/auth/role-gate";
 import { TeamBuzzer } from "@/components/team/team-buzzer";
 import { getMockRival, getMockSession, getMockTeam } from "@/lib/mock/session";
 
@@ -13,9 +14,9 @@ export const metadata: Metadata = {
 /**
  * Dashboard regu (dibuka di HP masing-masing regu).
  *
- * Tahap ini memakai data tiruan. Regu aktif dipilih dari query `?team=<id>`
- * agar bisa disimulasikan per-regu; pada implementasi asli id regu datang
- * dari sesi PIN/link yang dibuat admin.
+ * Dilindungi gerbang PIN per peran. Tahap ini memakai data tiruan. Regu aktif
+ * dipilih dari query `?team=<id>` agar bisa disimulasikan per-regu; pada
+ * implementasi asli id regu datang dari sesi PIN/link yang dibuat admin.
  */
 export default function ReguPage(props: PageProps<"/regu">) {
   return (
@@ -35,7 +36,11 @@ async function ReguScreen({
   const team = getMockTeam(teamId);
   const rival = getMockRival(team.id);
 
-  return <TeamBuzzer session={session} team={team} rival={rival} />;
+  return (
+    <RoleGate role="team" defaultSessionId={session.id}>
+      <TeamBuzzer session={session} team={team} rival={rival} />
+    </RoleGate>
+  );
 }
 
 function ReguScreenFallback() {

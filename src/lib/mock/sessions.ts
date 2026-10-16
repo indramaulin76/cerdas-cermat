@@ -7,38 +7,17 @@
  */
 
 import type { SessionSummary } from "@/lib/ccl/types";
-
-/** Peran yang butuh akses ke sebuah sesi. */
-export type SessionRole = "moderator" | "viewer" | "team";
-
-/** Urutan tampilan peran di halaman detail. */
-export const SESSION_ROLES: SessionRole[] = ["moderator", "viewer", "team"];
-
-/** Informasi statis tiap peran (label, deskripsi, halaman tujuan). */
-const ROLE_META: Record<
-  SessionRole,
-  { label: string; description: string; basePath: string }
-> = {
-  moderator: {
-    label: "Moderator",
-    description: "Dashboard untuk memandu jalannya lomba.",
-    basePath: "/moderator",
-  },
-  viewer: {
-    label: "Layar Penonton",
-    description: "Papan skor besar untuk ditampilkan ke penonton.",
-    basePath: "/penonton",
-  },
-  team: {
-    label: "HP Regu",
-    description: "Tombol jawab untuk tiap regu peserta.",
-    basePath: "/regu",
-  },
-};
+import {
+  getRolePath,
+  getRolePin,
+  ROLE_INFO,
+  ROLE_ORDER,
+  type RoleId,
+} from "@/lib/ccl/roles";
 
 /** Satu link akses peran beserta PIN-nya. */
 export type RoleLink = {
-  role: SessionRole;
+  role: RoleId;
   /** Label peran untuk tampilan. */
   label: string;
   /** Deskripsi singkat peran. */
@@ -55,36 +34,16 @@ export type SessionDetail = {
   roles: RoleLink[];
 };
 
-/**
- * PIN peran yang stabil untuk sebuah sesi (deterministik).
- *
- * Nilai sama selalu dihasilkan untuk pasangan sesi+peran yang sama, sehingga
- * "link dan PIN tetap sama" saat admin membuka ulang detail. Backend nanti
- * menyimpan PIN sungguhan di basis data.
- */
-function pinFor(sessionId: string, role: SessionRole): string {
-  const input = `${sessionId}:${role}`;
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  const value = 1000 + (Math.abs(hash) % 9000);
-  return String(value);
-}
-
 /** Rakit detail sesi (link + PIN tiap peran) dari sebuah ringkasan sesi. */
 export function buildMockSessionDetail(session: SessionSummary): SessionDetail {
   return {
     session,
-    roles: SESSION_ROLES.map((role) => ({
+    roles: ROLE_ORDER.map((role) => ({
       role,
-      label: ROLE_META[role].label,
-      description: ROLE_META[role].description,
-      path: `${ROLE_META[role].basePath}?session=${encodeURIComponent(
-        session.id,
-      )}`,
-      pin: pinFor(session.id, role),
+      label: ROLE_INFO[role].label,
+      description: ROLE_INFO[role].description,
+      path: getRolePath(session.id, role),
+      pin: getRolePin(session.id, role),
     })),
   };
 }

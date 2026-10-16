@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatSessionDate } from "@/lib/ccl/format";
+import { ROLE_INFO, type RoleId } from "@/lib/ccl/roles";
 import {
   SESSION_STATUS_CLASS,
   SESSION_STATUS_LABEL,
@@ -30,7 +31,6 @@ import {
 import {
   buildMockSessionDetail,
   type SessionDetail as SessionDetailData,
-  type SessionRole,
 } from "@/lib/mock/sessions";
 
 /**
@@ -61,26 +61,11 @@ function useIsClient(): boolean {
   );
 }
 
-/** Gaya aksen tiap peran agar tidak tertukar. */
-const ROLE_STYLE: Record<
-  SessionRole,
-  { icon: LucideIcon; card: string; badge: string }
-> = {
-  moderator: {
-    icon: LayoutDashboard,
-    card: "border-violet-400/25 bg-violet-400/[0.07]",
-    badge: "bg-violet-400/15 text-violet-200",
-  },
-  viewer: {
-    icon: MonitorPlay,
-    card: "border-cyan-400/25 bg-cyan-400/[0.07]",
-    badge: "bg-cyan-400/15 text-cyan-200",
-  },
-  team: {
-    icon: Smartphone,
-    card: "border-emerald-400/25 bg-emerald-400/[0.07]",
-    badge: "bg-emerald-400/15 text-emerald-200",
-  },
+/** Ikon tiap peran agar tidak tertukar (warna aksen dari ROLE_INFO). */
+const ROLE_ICON: Record<RoleId, LucideIcon> = {
+  moderator: LayoutDashboard,
+  viewer: MonitorPlay,
+  team: Smartphone,
 };
 
 /** Tombol ikon untuk menyalin satu nilai (link atau PIN). */
@@ -123,8 +108,8 @@ function RoleCard({
   copy: (text: string, key: string) => void;
   feedback: CopyFeedback | null;
 }) {
-  const style = ROLE_STYLE[role.role];
-  const Icon = style.icon;
+  const info = ROLE_INFO[role.role];
+  const Icon = ROLE_ICON[role.role];
   const url = origin ? `${origin}${role.path}` : role.path;
 
   const linkKey = `${role.role}:link`;
@@ -139,11 +124,11 @@ function RoleCard({
 
   return (
     <div
-      className={`flex flex-col gap-4 rounded-2xl border p-4 backdrop-blur sm:p-5 ${style.card}`}
+      className={`flex flex-col gap-4 rounded-2xl border p-4 backdrop-blur sm:p-5 ${info.accent.card}`}
     >
       <div className="flex items-center gap-3">
         <span
-          className={`grid size-10 shrink-0 place-items-center rounded-xl ${style.badge}`}
+          className={`grid size-10 shrink-0 place-items-center rounded-xl ${info.accent.badge}`}
         >
           <Icon className="size-5" aria-hidden />
         </span>
