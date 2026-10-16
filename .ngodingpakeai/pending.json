@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "0020095b14fbc0d9a9e4b2349e3ec1625578ffb3",
+  "generatedForCommit": "a82996d93d05966cad7876439a67f00fa35e9416",
   "files": [
     {
       "path": ".gitignore",
@@ -144,17 +144,17 @@
       "path": "src/app/api/sessions/[sessionId]/buzz/route.ts",
       "reason": "changed",
       "language": "typescript",
-      "size": 2805
+      "size": 2857
     },
     {
       "path": "src/app/api/sessions/[sessionId]/events/route.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2053
     },
     {
       "path": "src/app/api/sessions/[sessionId]/rounds/open/route.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1086
     },
@@ -258,7 +258,7 @@
       "path": "src/lib/ccl/api.ts",
       "reason": "changed",
       "language": "typescript",
-      "size": 4021
+      "size": 4175
     },
     {
       "path": "src/lib/ccl/types.ts",
@@ -280,13 +280,13 @@
     },
     {
       "path": "src/server/buzz.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 3779
+      "size": 6075
     },
     {
       "path": "src/server/events.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1874
     },
@@ -298,9 +298,9 @@
     },
     {
       "path": "src/server/status.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2246
+      "size": 2323
     },
     {
       "path": "tsconfig.json",

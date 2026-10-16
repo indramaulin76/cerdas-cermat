@@ -5,8 +5,9 @@
  * "Database Schema" pada PRD (bagian 6) agar cocok dengan kontrak API
  * yang dipakai dashboard regu, moderator, dan layar penonton.
  *
- * Catatan: tabel `teams` dan `buzz_events` adalah fondasi untuk fitur
- * "Tombol Jawab Regu". Tabel sesi/ronde/user menyusul pada tugas berikutnya.
+ * Catatan: tabel `sessions`, `teams`, `rounds`, dan `buzz_events` menopang
+ * fitur "Tombol Jawab Regu" sekaligus "Dashboard Moderator". Tabel akun
+ * panitia menyusul pada tugas fitur Login Admin.
  */
 
 import { sql } from "drizzle-orm";
@@ -18,10 +19,16 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-/** Sesi lomba (`sessions`) — minimal, untuk mendukung relasi. */
+/** Sesi lomba (`sessions`). */
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
   title: text("title").notNull().default("Cerdas Cermat Live"),
+  /** PIN masuk moderator untuk sesi ini. */
+  moderatorPin: text("moderator_pin"),
+  /** PIN masuk layar penonton untuk sesi ini. */
+  viewerPin: text("viewer_pin"),
+  /** PIN masuk HP regu untuk sesi ini. */
+  teamPin: text("team_pin"),
   cooldownSeconds: integer("cooldown_seconds").notNull().default(10),
   correctPoints: integer("correct_points").notNull().default(100),
   wrongPoints: integer("wrong_points").notNull().default(-50),
