@@ -205,15 +205,10 @@ export function roleAuthPath(sessionId: string, role: RoleId): string {
 
 /* ------------------------------ Panitia (Admin) ------------------------------ */
 
-/** Permintaan masuk sebagai panitia (admin) memakai PIN. */
-export type AdminLoginRequest = {
-  pin: string;
-};
-
-/** Balasan endpoint auth panitia. */
+/** Balasan identitas admin bootstrap. */
 export type AdminAuthResponse = {
   ok: true;
-  /** `true` bila permintaan ini sudah masuk sebagai panitia. */
+  /** Selalu true karena login admin dinonaktifkan. */
   authenticated: boolean;
   admin?: {
     id: string;

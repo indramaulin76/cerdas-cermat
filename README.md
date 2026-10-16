@@ -16,9 +16,8 @@ npm run db:migrate
 npm run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000). Login panitia memakai PIN
-empat digit dari `CCL_ADMIN_PIN`. Tetapkan PIN tersebut di environment lokal
-dan deployment.
+Buka [http://localhost:3000](http://localhost:3000). Dashboard admin langsung
+terbuka tanpa login.
 
 ## Konfigurasi
 
@@ -28,14 +27,14 @@ Variabel lingkungan berikut dapat disetel:
 | --- | --- | --- |
 | `DATABASE_URL` | Connection string PostgreSQL/Neon | Wajib |
 | `ABLY_API_KEY` | API key server Ably; tidak pernah dikirim ke browser | Wajib |
-| `CCL_ADMIN_EMAIL` | Email tampilan admin bootstrap | Opsional |
-| `CCL_ADMIN_PIN` | PIN empat digit untuk login admin bootstrap | Wajib |
-| `CCL_AUTH_SECRET` | Rahasia HMAC untuk cookie login | Wajib di produksi |
+| `CCL_ADMIN_EMAIL` | Email admin bootstrap untuk operasi internal | Opsional |
+| `CCL_AUTH_SECRET` | Rahasia HMAC untuk PIN peran sesi | Wajib di produksi |
 
-Untuk produksi, wajib set `CCL_ADMIN_PIN` dan `CCL_AUTH_SECRET`; aplikasi menolak
-autentikasi bootstrap/token bila konfigurasinya tidak tersedia. Gunakan PIN
-empat digit dan rahasia acak yang panjang (minimal 32 byte), lalu simpan nilainya
-melalui pengelola rahasia environment deployment, bukan di repositori.
+**Peringatan:** login admin dinonaktifkan dan API pengelolaan terbuka. Siapa pun
+yang mengetahui alamat situs dapat mengelola sesi, regu, dan akun panitia,
+termasuk aksi moderator. Gunakan hanya untuk deployment sementara atau batasi
+situs lewat kontrol akses di platform hosting. Tetap atur `CCL_AUTH_SECRET`
+untuk PIN peran sesi.
 
 Contoh membuat rahasia secara lokal:
 
@@ -74,8 +73,8 @@ npm run build
 
 ## Catatan deployment
 
-Untuk Vercel, atur `DATABASE_URL`, `ABLY_API_KEY`, `CCL_ADMIN_PIN`, dan
-`CCL_AUTH_SECRET` pada environment project. Terapkan
+Untuk Vercel, atur `DATABASE_URL`, `ABLY_API_KEY`, dan `CCL_AUTH_SECRET` pada
+environment project. Terapkan
 migrasi PostgreSQL sebelum deployment. API key Ably hanya dipakai di server;
 klien menerima token berumur terbatas yang hanya dapat subscribe ke kanal sesi
 dan audiensnya. Live (moderator/regu) dan penonton memakai kanal terpisah.

@@ -1,8 +1,6 @@
 /**
- * Autentikasi akun panitia untuk mengelola sesi lomba.
- *
- * `CCL_ADMIN_PIN` menyediakan akses bootstrap; akun tambahan disimpan di
- * PostgreSQL dengan hash scrypt.
+ * Identitas admin bootstrap untuk aplikasi yang saat ini tidak memakai login.
+ * Akun tambahan disimpan di PostgreSQL dengan hash scrypt.
  */
 
 import "server-only";
@@ -10,17 +8,10 @@ import "server-only";
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 
 import { asc, eq } from "drizzle-orm";
-import { cookies } from "next/headers";
 
 import { db } from "@/db";
 import { users, type UserRow } from "@/db/schema";
-import { safeEqual, safeEqualSecret, signValue } from "@/server/token";
-import {
-  requireAnyRole,
-  requireModerator,
-  type ModeratorGate,
-  type RoleGate,
-} from "@/server/auth";
+import type { ModeratorGate, RoleGate } from "@/server/auth";
 import type { RoleId } from "@/lib/ccl/roles";
 
 const BOOTSTRAP_ID = "bootstrap-admin";
@@ -28,27 +19,6 @@ const BOOTSTRAP_ID = "bootstrap-admin";
 function getBootstrapEmail(): string {
   const configuredEmail = process.env.CCL_ADMIN_EMAIL;
   return (configuredEmail ?? "admin@ccl.local").trim().toLowerCase();
-}
-
-function getBootstrapPin(): string {
-  const pin = process.env.CCL_ADMIN_PIN;
-  if (!pin || !/^\d{4}$/.test(pin)) {
-    throw new Error("CCL_ADMIN_PIN wajib diatur sebagai PIN 4 digit.");
-  }
-  return pin;
-}
-
-export const ADMIN_COOKIE_NAME = "ccl_admin";
-export const ADMIN_COOKIE_MAX_AGE = 60 * 60 * 8;
-
-export function adminCookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: ADMIN_COOKIE_MAX_AGE,
-  };
 }
 
 export type AdminIdentity = {
@@ -64,30 +34,13 @@ function toIdentity(row: UserRow): AdminIdentity {
   return { id: row.id, name: row.name, email: row.email, role: row.role };
 }
 
-function tokenSignature(id: string): string {
-  return signValue(`admin:${id}`);
-}
-
-export function createAdminToken(id = BOOTSTRAP_ID): string {
-  return `${id}.${tokenSignature(id)}`;
-}
-
-export function verifyAdminToken(token: string): string | null {
-  const separator = token.lastIndexOf(".");
-  if (separator < 1) return null;
-  const id = token.slice(0, separator);
-  const signature = token.slice(separator + 1);
-  return safeEqual(signature, tokenSignature(id)) ? id : null;
-}
-
 export function hashAdminPassword(password: string): string {
   const salt = randomBytes(16);
   const hash = scryptSync(password, salt, 64);
   return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
 }
 
-export function verifyAdminPin(pin: string): AdminIdentity | null {
-  if (!safeEqualSecret(pin, getBootstrapPin())) return null;
+export async function getCurrentAdmin(): Promise<AdminIdentity> {
   return {
     id: BOOTSTRAP_ID,
     name: "Admin",
@@ -96,30 +49,8 @@ export function verifyAdminPin(pin: string): AdminIdentity | null {
   };
 }
 
-export async function getCurrentAdmin(): Promise<AdminIdentity | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
-  if (!token) return null;
-  const id = verifyAdminToken(token);
-  if (!id) return null;
-  if (id === BOOTSTRAP_ID) {
-    return {
-      id: BOOTSTRAP_ID,
-      name: "Admin",
-      email: getBootstrapEmail(),
-      role: "admin",
-    };
-  }
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, id))
-    .limit(1);
-  return row ? toIdentity(row) : null;
-}
-
 export async function isAdminAuthenticated(): Promise<boolean> {
-  return (await getCurrentAdmin()) !== null;
+  return true;
 }
 
 export type AdminGate =
@@ -264,8 +195,8 @@ export async function deleteAdminUser(
 export async function requireModeratorOrAdmin(
   sessionId: string,
 ): Promise<ModeratorGate> {
-  if (await isAdminAuthenticated()) return { ok: true };
-  return requireModerator(sessionId);
+  void sessionId;
+  return { ok: true };
 }
 
 /** Baca data sesi untuk admin atau salah satu peran yang ditentukan. */
@@ -273,6 +204,7 @@ export async function requireAdminOrAnyRole(
   sessionId: string,
   roles: RoleId[],
 ): Promise<RoleGate> {
-  if (await isAdminAuthenticated()) return { ok: true };
-  return requireAnyRole(sessionId, roles);
+  void sessionId;
+  void roles;
+  return { ok: true };
 }
