@@ -3,15 +3,18 @@
  *
  * Semua penulisan lewat satu transaksi SQLite yang sinkron, sehingga dua regu
  * yang menekan nyaris bersamaan tetap menghasilkan satu pemenang secara
- * konsisten: tekanan pertama yang masuk transaksi itulah yang ditandai
- * `isFirst`.
+ * konsisten. Urutan akhir dihitung ulang setiap ada tekanan baru memakai
+ * `reactionMs` (kecepatan reaksi yang sama-sama diukur dari aba-aba), dan bila
+ * dua reaksi bedanya dalam batas toleransi, waktu tiba di server yang
+ * menentukan — supaya regu yang benar-benar lebih dulu menekan tetap menang
+ * meski jaringannya sedikit lebih lambat.
  */
 
 import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -21,6 +24,14 @@ import {
   type BuzzEventRow,
 } from "@/db/schema";
 import type { BuzzEventDto } from "@/lib/ccl/api";
+
+/**
+ * Selisih reaksi (ms) yang dianggap "hampir bersamaan".
+ *
+ * Bila dua regu menekan dalam rentang ini, urutan ditentukan waktu tiba di
+ * server, bukan selisih milidetik yang bisa goyang karena jitter jaringan.
+ */
+export const TIE_TOLERANCE_MS = 50;
 
 /** Masukan untuk mencatat satu tekanan. */
 export type RecordBuzzInput = {
@@ -32,8 +43,13 @@ export type RecordBuzzInput = {
 
 /** Hasil operasi pencatatan tekanan. */
 export type RecordBuzzOutcome =
-  | { status: "recorded"; row: BuzzEventRow; order: number; duplicate: false }
-  | { status: "duplicate"; row: BuzzEventRow; order: number; duplicate: true }
+  | {
+      status: "recorded" | "duplicate";
+      row: BuzzEventRow;
+      order: number;
+      duplicate: boolean;
+      ranking: BuzzEventRow[];
+    }
   | { status: "unknown_team"; teamId: string };
 
 /** Batas cakupan ronde: cocokkan `round_id` yang sama (termasuk sama-sama null). */
@@ -43,13 +59,50 @@ function roundScope(roundId: string | null) {
     : eq(buzzEvents.roundId, roundId);
 }
 
+/** Urutkan tekanan murni berdasarkan reaksi, lalu waktu tiba, lalu id. */
+function compareBuzz(a: BuzzEventRow, b: BuzzEventRow): number {
+  if (a.reactionMs !== b.reactionMs) return a.reactionMs - b.reactionMs;
+  const time = a.createdAt.getTime() - b.createdAt.getTime();
+  if (time !== 0) return time;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/**
+ * Hitung urutan tekanan sebuah ronde.
+ *
+ * Dasar urutan adalah `reactionMs` (adil, sama-sama diukur dari aba-aba).
+ * Namun bila reaksi peringkat dua berada dalam `TIE_TOLERANCE_MS` dari
+ * peringkat satu dan ternyata tiba di server lebih dulu, keduanya dianggap
+ * seri dan waktu tiba yang menang. Hasilnya deterministik dan konsisten:
+ * satu pemenang, tanpa bergetar karena jitter.
+ */
+export function rankBuzzes(rows: BuzzEventRow[]): BuzzEventRow[] {
+  const ranked = [...rows].sort(compareBuzz);
+
+  if (ranked.length >= 2) {
+    const [first, second] = ranked;
+    const withinTolerance =
+      second.reactionMs - first.reactionMs <= TIE_TOLERANCE_MS;
+    const secondArrivedEarlier =
+      second.createdAt.getTime() < first.createdAt.getTime();
+
+    if (withinTolerance && secondArrivedEarlier) {
+      ranked[0] = second;
+      ranked[1] = first;
+    }
+  }
+
+  return ranked;
+}
+
 /**
  * Catat tekanan tombol dari sebuah regu.
  *
  * - Menolak regu yang tidak dikenal pada sesi tersebut (`unknown_team`).
- * - Tekanan pertama pada cakupan ronde ditandai `isFirst`.
  * - Tekanan ulang dari regu yang sama tidak menambah baris baru, melainkan
  *   mengembalikan catatan yang sudah ada (`duplicate`).
+ * - Setelah setiap tekanan baru, urutan & penanda tercepat dihitung ulang
+ *   sehingga seri hampir bersamaan tetap konsisten.
  */
 export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
   const { sessionId, teamId } = input;
@@ -79,42 +132,54 @@ export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
       roundId = openRound?.id ?? null;
     }
 
-    const scope = and(
-      eq(buzzEvents.sessionId, sessionId),
-      roundScope(roundId),
-    );
+    const scope = and(eq(buzzEvents.sessionId, sessionId), roundScope(roundId));
 
-    const ordered = tx
+    const existing = tx
       .select()
       .from(buzzEvents)
-      .where(scope)
-      .orderBy(asc(buzzEvents.createdAt), asc(buzzEvents.id))
-      .all();
+      .where(and(scope, eq(buzzEvents.teamId, teamId)))
+      .get();
 
-    const existingIndex = ordered.findIndex((event) => event.teamId === teamId);
-    if (existingIndex >= 0) {
-      return {
-        status: "duplicate",
-        row: ordered[existingIndex],
-        order: existingIndex + 1,
-        duplicate: true,
-      } as const;
+    if (!existing) {
+      const row: BuzzEventRow = {
+        id: randomUUID(),
+        sessionId,
+        teamId,
+        roundId,
+        reactionMs,
+        // Ditentukan ulang di bawah; nilai awal sekadar pengisi.
+        isFirst: false,
+        createdAt: new Date(),
+      };
+      tx.insert(buzzEvents).values(row).run();
     }
 
-    const order = ordered.length + 1;
-    const row: BuzzEventRow = {
-      id: randomUUID(),
-      sessionId,
-      teamId,
-      roundId,
-      reactionMs,
-      isFirst: order === 1,
-      createdAt: new Date(),
-    };
+    // Hitung ulang urutan seluruh tekanan ronde ini, lalu simpan penanda
+    // tercepat bila berubah.
+    const rows = tx.select().from(buzzEvents).where(scope).all();
+    const ranked = rankBuzzes(rows);
 
-    tx.insert(buzzEvents).values(row).run();
+    ranked.forEach((row, index) => {
+      const shouldBeFirst = index === 0;
+      if (row.isFirst !== shouldBeFirst) {
+        tx.update(buzzEvents)
+          .set({ isFirst: shouldBeFirst })
+          .where(eq(buzzEvents.id, row.id))
+          .run();
+        row.isFirst = shouldBeFirst;
+      }
+    });
 
-    return { status: "recorded", row, order, duplicate: false } as const;
+    const index = ranked.findIndex((row) => row.teamId === teamId);
+    const row = ranked[index];
+
+    return {
+      status: existing ? "duplicate" : "recorded",
+      row,
+      order: index + 1,
+      duplicate: Boolean(existing),
+      ranking: ranked,
+    } as const;
   });
 }
 

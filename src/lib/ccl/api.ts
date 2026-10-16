@@ -97,8 +97,15 @@ export type TeamStatusResponse = {
 export type SessionEvent =
   /** Moderator membuka soal baru: kunci regu direset & aba-aba dimulai. */
   | { type: "round.opened"; at: string; round: RoundDto }
-  /** Sebuah regu menekan tombol jawab. */
-  | { type: "buzz.recorded"; at: string; order: number; event: BuzzEventDto }
+  /** Sebuah regu menekan tombol jawab (beserta urutan terkini). */
+  | {
+      type: "buzz.recorded";
+      at: string;
+      order: number;
+      event: BuzzEventDto;
+      /** Urutan lengkap tekanan ronde ini (indeks 0 = tercepat). */
+      ranking: BuzzEventDto[];
+    }
   /** Moderator mengosongkan ronde: urutan & kunci kembali bersih. */
   | { type: "round.reset"; at: string; roundId: string | null }
   /** Denyut koneksi agar aliran tidak diputus oleh proxy. */

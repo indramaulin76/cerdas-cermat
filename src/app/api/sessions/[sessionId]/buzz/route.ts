@@ -96,6 +96,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       at: new Date().toISOString(),
       order: outcome.order,
       event,
+      ranking: outcome.ranking.map(toBuzzEventDto),
     });
   }
 

@@ -10,6 +10,7 @@ import {
   type BuzzEventRow,
   type RoundRow,
 } from "@/db/schema";
+import { rankBuzzes } from "@/server/buzz";
 
 export type TeamStatusInput = {
   sessionId: string;
@@ -58,16 +59,13 @@ export function getTeamStatus(input: TeamStatusInput): TeamStatusOutcome {
       roundId === null ? isNull(buzzEvents.roundId) : eq(buzzEvents.roundId, roundId),
     );
 
-    const allBuzzes = tx
-      .select()
-      .from(buzzEvents)
-      .where(scope)
-      .orderBy(buzzEvents.createdAt, buzzEvents.id)
-      .all();
+    // Pakai urutan yang sama dengan papan skor moderator (seri ditangani
+    // lewat reactionMs + waktu tiba).
+    const ranked = rankBuzzes(tx.select().from(buzzEvents).where(scope).all());
 
-    const idx = allBuzzes.findIndex((e) => e.teamId === teamId);
+    const idx = ranked.findIndex((e) => e.teamId === teamId);
     if (idx >= 0) {
-      const ev = allBuzzes[idx];
+      const ev = ranked[idx];
       return {
         status: "found",
         locked: true,
@@ -81,7 +79,7 @@ export function getTeamStatus(input: TeamStatusInput): TeamStatusOutcome {
       } as const;
     }
 
-    const anyBuzzes = allBuzzes.length > 0;
+    const anyBuzzes = ranked.length > 0;
     return {
       status: "found",
       locked: roundId === null ? false : anyBuzzes,
