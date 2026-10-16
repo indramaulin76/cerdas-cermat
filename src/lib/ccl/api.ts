@@ -174,6 +174,15 @@ export function resetRoundPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/rounds/reset`;
 }
 
+/** Balasan urutan jawab regu tercepat pada sebuah ronde. */
+export type BuzzOrderResponse = {
+  ok: true;
+  roundId: string | null;
+  /** Urutan tekanan (indeks 0 = tercepat). */
+  ranking: BuzzEventDto[];
+  winner: BuzzEventDto | null;
+};
+
 /** Endpoint membuka soal (membuka ronde baru). */
 export function openRoundPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/rounds/open`;

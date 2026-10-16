@@ -195,3 +195,46 @@ export function toBuzzEventDto(row: BuzzEventRow): BuzzEventDto {
     createdAt: row.createdAt.toISOString(),
   };
 }
+
+/** Cari ronde yang sedang terbuka untuk sebuah sesi. */
+function findOpenRoundId(sessionId: string): string | null {
+  const open = db
+    .select({ id: rounds.id })
+    .from(rounds)
+    .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
+    .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
+    .get();
+  return open?.id ?? null;
+}
+
+/** Masukan untuk mengambil urutan jawab. */
+export type BuzzOrderInput = {
+  sessionId: string;
+  /** Bila kosong, pakai soal yang sedang terbuka. */
+  roundId?: string | null;
+};
+
+/** Hasil urutan jawab regu tercepat. */
+export type BuzzOrderOutcome = {
+  roundId: string | null;
+  /** Urutan tekanan (indeks 0 = tercepat). */
+  ranking: BuzzEventRow[];
+  winner: BuzzEventRow | null;
+};
+
+/**
+ * Urutan jawab regu tercepat pada sebuah ronde.
+ *
+ * Urutan memakai aturan yang sama dengan pencatatan tekanan (termasuk
+ * penanganan seri hampir bersamaan), sehingga moderator melihat hasil yang
+ * konsisten dengan yang disiarkan ke HP regu.
+ */
+export function getBuzzOrder(input: BuzzOrderInput): BuzzOrderOutcome {
+  const { sessionId } = input;
+  const roundId = input.roundId ?? findOpenRoundId(sessionId);
+
+  const scope = and(eq(buzzEvents.sessionId, sessionId), roundScope(roundId));
+  const ranking = rankBuzzes(db.select().from(buzzEvents).where(scope).all());
+
+  return { roundId, ranking, winner: ranking[0] ?? null };
+}

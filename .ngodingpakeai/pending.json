@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "808c316ad7825f99fa484a4e9b7a87037795ae25",
+  "generatedForCommit": "8e035a119c6073c13f5208e296179178b3b19f69",
   "files": [
     {
       "path": ".gitignore",
@@ -94,7 +94,7 @@
     },
     {
       "path": "drizzle/0002_tired_kulan_gath.sql",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "sql",
       "size": 186
     },
@@ -112,13 +112,13 @@
     },
     {
       "path": "drizzle/meta/0002_snapshot.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 10098
     },
     {
       "path": "drizzle/meta/_journal.json",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "json",
       "size": 487
     },
@@ -153,6 +153,12 @@
       "size": 1061
     },
     {
+      "path": "src/app/api/sessions/[sessionId]/auth/moderator/route.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3032
+    },
+    {
       "path": "src/app/api/sessions/[sessionId]/buzz/route.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -165,10 +171,22 @@
       "size": 2053
     },
     {
-      "path": "src/app/api/sessions/[sessionId]/rounds/open/route.ts",
-      "reason": "needs_summary",
+      "path": "src/app/api/sessions/[sessionId]/round/status/route.ts",
+      "reason": "new",
       "language": "typescript",
-      "size": 1086
+      "size": 1227
+    },
+    {
+      "path": "src/app/api/sessions/[sessionId]/rounds/open/route.ts",
+      "reason": "changed",
+      "language": "typescript",
+      "size": 1349
+    },
+    {
+      "path": "src/app/api/sessions/[sessionId]/rounds/reset/route.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1417
     },
     {
       "path": "src/app/api/sessions/[sessionId]/teams/[teamId]/status/route.ts",
@@ -256,7 +274,7 @@
     },
     {
       "path": "src/db/schema.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 5281
     },
@@ -268,9 +286,9 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 4175
+      "size": 5756
     },
     {
       "path": "src/lib/ccl/types.ts",
@@ -291,6 +309,12 @@
       "size": 24
     },
     {
+      "path": "src/server/auth.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3680
+    },
+    {
       "path": "src/server/buzz.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -304,9 +328,9 @@
     },
     {
       "path": "src/server/round.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 1764
+      "size": 4064
     },
     {
       "path": "src/server/status.ts",

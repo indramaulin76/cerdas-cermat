@@ -1,17 +1,26 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import type { BuzzApiResponse, RecordBuzzRequest } from "@/lib/ccl/api";
-import { recordBuzz, toBuzzEventDto } from "@/server/buzz";
+import type {
+  BuzzApiResponse,
+  BuzzOrderResponse,
+  RecordBuzzRequest,
+} from "@/lib/ccl/api";
+import { getBuzzOrder, recordBuzz, toBuzzEventDto } from "@/server/buzz";
 import { publish } from "@/server/events";
 
 /**
- * Endpoint catat tekanan tombol jawab.
+ * Endpoint tekanan tombol jawab.
  *
  * `POST /api/sessions/[sessionId]/buzz`
  * Body: `{ teamId, roundId?, reactionMs }`
  *
  * Menandai tekanan pertama sebagai regu tercepat dan mencegah tekanan dobel
  * dari regu yang sama. Berjalan di runtime Node (bawaan) karena memakai SQLite.
+ *
+ * `GET /api/sessions/[sessionId]/buzz?roundId=...`
+ *
+ * Mengembalikan urutan jawab regu tercepat (untuk moderator). Tanpa `roundId`,
+ * memakai soal yang sedang terbuka.
  */
 
 type RouteParams = { params: Promise<{ sessionId: string }> };
@@ -21,6 +30,25 @@ function errorResponse(error: string, message: string, status: number) {
     { ok: false, error, message },
     { status },
   );
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  const { sessionId } = await params;
+
+  if (!sessionId) {
+    return errorResponse("invalid_session", "Session id wajib diisi.", 400);
+  }
+
+  const roundId = request.nextUrl.searchParams.get("roundId");
+  const order = getBuzzOrder({ sessionId, roundId });
+
+  const response: BuzzOrderResponse = {
+    ok: true,
+    roundId: order.roundId,
+    ranking: order.ranking.map(toBuzzEventDto),
+    winner: order.winner ? toBuzzEventDto(order.winner) : null,
+  };
+  return NextResponse.json(response);
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
