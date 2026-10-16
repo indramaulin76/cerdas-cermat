@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "c6173ff2b0ef913f0b17342f158d9d9b7d45974e",
+  "generatedForCommit": "f04b17b906b923f38627d3fb8bb43b1182b8a2c1",
   "files": [
     {
       "path": ".gitignore",
@@ -312,7 +312,7 @@
       "path": "src/components/admin/settings-form.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 8432
+      "size": 11513
     },
     {
       "path": "src/components/admin/team-manager.tsx",
@@ -481,6 +481,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 2322
+    },
+    {
+      "path": "src/lib/mock/settings-store.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2348
     },
     {
       "path": "src/lib/utils.ts",

@@ -6,8 +6,10 @@
  * yang dipakai dashboard regu, moderator, dan layar penonton.
  *
  * Catatan: tabel `sessions`, `teams`, `rounds`, dan `buzz_events` menopang
- * fitur "Tombol Jawab Regu" sekaligus "Dashboard Moderator". Tabel akun
- * panitia menyusul pada tugas fitur Login Admin.
+ * fitur "Tombol Jawab Regu" sekaligus "Dashboard Moderator". Tabel `sessions`
+ * juga menyimpan PIN tiap peran (moderator/penonton/regu) yang menjadi dasar
+ * tiga link pada fitur "Sesi & Link". Tabel akun panitia menyusul pada tugas
+ * fitur Login Admin.
  */
 
 import { sql } from "drizzle-orm";
@@ -20,28 +22,37 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 /** Sesi lomba (`sessions`). */
-export const sessions = sqliteTable("sessions", {
-  id: text("id").primaryKey(),
-  title: text("title").notNull().default("Cerdas Cermat Live"),
-  /** PIN masuk moderator untuk sesi ini. */
-  moderatorPin: text("moderator_pin"),
-  /** PIN masuk layar penonton untuk sesi ini. */
-  viewerPin: text("viewer_pin"),
-  /** PIN masuk HP regu untuk sesi ini. */
-  teamPin: text("team_pin"),
-  cooldownSeconds: integer("cooldown_seconds").notNull().default(10),
-  correctPoints: integer("correct_points").notNull().default(100),
-  wrongPoints: integer("wrong_points").notNull().default(-50),
-  status: text("status", { enum: ["draft", "active", "finished"] })
-    .notNull()
-    .default("draft"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`(unixepoch() * 1000)`),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`(unixepoch() * 1000)`),
-});
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull().default("Cerdas Cermat Live"),
+    /** PIN masuk moderator untuk sesi ini. */
+    moderatorPin: text("moderator_pin"),
+    /** PIN masuk layar penonton untuk sesi ini. */
+    viewerPin: text("viewer_pin"),
+    /** PIN masuk HP regu untuk sesi ini. */
+    teamPin: text("team_pin"),
+    cooldownSeconds: integer("cooldown_seconds").notNull().default(10),
+    correctPoints: integer("correct_points").notNull().default(100),
+    wrongPoints: integer("wrong_points").notNull().default(-50),
+    status: text("status", { enum: ["draft", "active", "finished"] })
+      .notNull()
+      .default("draft"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (table) => [
+    // Daftar sesi ditampilkan terbaru lebih dulu.
+    index("sessions_created_at_idx").on(table.createdAt),
+    // Saring sesi menurut status (draft/active/finished).
+    index("sessions_status_idx").on(table.status),
+  ],
+);
 
 /** Regu peserta lomba (`teams`). */
 export const teams = sqliteTable(
