@@ -279,6 +279,20 @@ export type TeamsResponse = {
   teams: TeamDto[];
 };
 
+/** Permintaan menambah regu baru. */
+export type CreateTeamRequest = {
+  /** Nama regu yang tampil di layar. */
+  name: string;
+  /** Warna identitas opsional (hex). Bila kosong, dipilih otomatis. */
+  color?: string;
+};
+
+/** Balasan penambahan regu. */
+export type CreateTeamResponse = {
+  ok: true;
+  team: TeamDto;
+};
+
 /** Permintaan mengubah skor regu. */
 export type UpdateScoreRequest = {
   /** Tambah/kurang poin secara langsung (mis. +100 atau -50). */

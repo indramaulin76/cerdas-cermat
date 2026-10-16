@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "2b9e27d4e813ece87b4701432ac2e7339af1abf8",
+  "generatedForCommit": "4db20e6ed87d769dd4cf374f3e4f658e145ce76b",
   "files": [
     {
       "path": ".gitignore",
@@ -168,11 +168,11 @@
       "path": "src/app/api/sessions/[sessionId]/buzz/route.ts",
       "reason": "needs_summary",
       "language": "typescript",
-      "size": 3640
+      "size": 3916
     },
     {
       "path": "src/app/api/sessions/[sessionId]/events/route.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 674
     },
@@ -186,13 +186,13 @@
       "path": "src/app/api/sessions/[sessionId]/rounds/open/route.ts",
       "reason": "needs_summary",
       "language": "typescript",
-      "size": 1708
+      "size": 1960
     },
     {
       "path": "src/app/api/sessions/[sessionId]/rounds/reset/route.ts",
       "reason": "needs_summary",
       "language": "typescript",
-      "size": 1417
+      "size": 1651
     },
     {
       "path": "src/app/api/sessions/[sessionId]/settings/route.ts",
@@ -220,7 +220,7 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/viewer/events/route.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1271
     },
@@ -370,9 +370,9 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
-      "size": 10273
+      "size": 10951
     },
     {
       "path": "src/lib/ccl/team-colors.ts",
@@ -414,7 +414,7 @@
       "path": "src/server/buzz.ts",
       "reason": "needs_summary",
       "language": "typescript",
-      "size": 7474
+      "size": 7861
     },
     {
       "path": "src/server/events.ts",
@@ -438,7 +438,7 @@
       "path": "src/server/snapshot.ts",
       "reason": "needs_summary",
       "language": "typescript",
-      "size": 1328
+      "size": 1390
     },
     {
       "path": "src/server/status.ts",
@@ -448,7 +448,7 @@
     },
     {
       "path": "src/server/stream.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2932
     },
