@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# database (SQLite) — berkas runtime, skema & migrasi ada di git
+/data
+*.db
+*.db-wal
+*.db-shm
+
+# arsip spesifikasi (duplikat dari folder cerdas-cermat-live/)
+/cerdas-cermat-live.zip

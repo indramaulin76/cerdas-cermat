@@ -1,12 +1,12 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "366820f777cd04cbe7e7d67492e161c0ccbaf3fb",
+  "generatedForCommit": "1667352cb0ad80506c3ca8ab8d1c3f0019e0e03c",
   "files": [
     {
       "path": ".gitignore",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": null,
-      "size": 480
+      "size": 577
     },
     {
       "path": ".ngodingpakeaiignore",
@@ -27,10 +27,82 @@
       "size": 1450
     },
     {
+      "path": "cerdas-cermat-live/PRD.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 9884
+    },
+    {
+      "path": "cerdas-cermat-live/features/01-tombol-jawab-regu.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 3491
+    },
+    {
+      "path": "cerdas-cermat-live/features/02-dashboard-moderator.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 3907
+    },
+    {
+      "path": "cerdas-cermat-live/features/03-layar-penonton.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 2966
+    },
+    {
+      "path": "cerdas-cermat-live/features/04-kelola-regu.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 2743
+    },
+    {
+      "path": "cerdas-cermat-live/features/05-sesi-link.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 3281
+    },
+    {
+      "path": "cerdas-cermat-live/features/06-pengaturan-lomba.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 2560
+    },
+    {
+      "path": "cerdas-cermat-live/features/07-login-admin.md",
+      "reason": "new",
+      "language": "markdown",
+      "size": 2452
+    },
+    {
       "path": "components.json",
       "reason": "needs_summary",
       "language": "json",
       "size": 521
+    },
+    {
+      "path": "drizzle/0000_unique_switch.sql",
+      "reason": "new",
+      "language": "sql",
+      "size": 1212
+    },
+    {
+      "path": "drizzle/meta/0000_snapshot.json",
+      "reason": "new",
+      "language": "json",
+      "size": 4722
+    },
+    {
+      "path": "drizzle/meta/_journal.json",
+      "reason": "new",
+      "language": "json",
+      "size": 203
+    },
+    {
+      "path": "drizzle.config.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 526
     },
     {
       "path": "eslint.config.mjs",
@@ -40,21 +112,21 @@
     },
     {
       "path": "next.config.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 318
+      "size": 443
     },
     {
       "path": "package-lock.json",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "json",
-      "size": 408374
+      "size": 458978
     },
     {
       "path": "package.json",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "json",
-      "size": 708
+      "size": 1061
     },
     {
       "path": "src/app/globals.css",
@@ -127,6 +199,18 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 3375
+    },
+    {
+      "path": "src/db/index.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1132
+    },
+    {
+      "path": "src/db/schema.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3036
     },
     {
       "path": "src/hooks/use-team-buzzer.ts",
