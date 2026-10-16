@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { cn } from "cn";
 
+import { AURORA_COLORS } from "@/lib/ccl/theme";
+
 /**
  * Gerbang PIN untuk membuka Layar Penonton.
  *
@@ -13,6 +15,10 @@ import { cn } from "cn";
  */
 
 const PIN_LENGTH = 4;
+
+/** Gaya tombol papan angka agar konsisten. */
+const KEY_CLASS =
+  "flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-2xl font-bold tabular-nums transition-transform hover:bg-white/[0.12] active:scale-95 sm:h-16";
 
 export function ViewerPinGate({
   title,
@@ -60,19 +66,30 @@ export function ViewerPinGate({
 
   return (
     <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-5 py-10 text-foreground">
+      {/* Latar aurora agar selaras dengan papan skor. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_-20%,color-mix(in_oklch,var(--color-primary)_24%,transparent),transparent_60%)]"
-      />
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(120%_120%_at_50%_-20%,color-mix(in_oklch,var(--color-primary)_18%,transparent),transparent_60%)]" />
+        <div
+          className="absolute -top-40 -left-32 size-[32rem] animate-ccl-aurora rounded-full opacity-25 blur-[120px]"
+          style={{ backgroundColor: AURORA_COLORS[0] }}
+        />
+        <div
+          className="absolute -right-24 -bottom-48 size-[34rem] animate-ccl-aurora-slow rounded-full opacity-20 blur-[130px]"
+          style={{ backgroundColor: AURORA_COLORS[1] }}
+        />
+      </div>
 
       <div
         className={cn(
-          "relative z-10 w-full max-w-sm rounded-4xl border border-border/60 bg-card/70 p-6 backdrop-blur sm:p-8",
+          "relative z-10 w-full max-w-sm rounded-4xl border border-white/10 bg-white/[0.05] p-6 shadow-2xl shadow-fuchsia-500/10 backdrop-blur-xl sm:p-8",
           error && "animate-ccl-shake",
         )}
       >
         <div className="text-center">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+          <p className="bg-gradient-to-r from-fuchsia-400 to-cyan-300 bg-clip-text text-xs font-semibold tracking-widest text-transparent uppercase">
             Layar Penonton
           </p>
           <h1 className="mt-1 text-lg font-bold">{title}</h1>
@@ -93,8 +110,8 @@ export function ViewerPinGate({
               className={cn(
                 "size-4 rounded-full border-2 transition-colors",
                 index < pin.length
-                  ? "border-primary bg-primary"
-                  : "border-border bg-transparent",
+                  ? "border-transparent bg-gradient-to-br from-fuchsia-500 to-cyan-400"
+                  : "border-white/20 bg-transparent",
                 error && "border-destructive bg-destructive",
               )}
             />
@@ -118,7 +135,7 @@ export function ViewerPinGate({
               key={digit}
               type="button"
               onClick={() => press(digit)}
-              className="flex h-14 items-center justify-center rounded-2xl border border-border/60 bg-background/60 text-2xl font-bold tabular-nums transition-transform hover:bg-muted active:scale-95 sm:h-16"
+              className={KEY_CLASS}
             >
               {digit}
             </button>
@@ -127,7 +144,7 @@ export function ViewerPinGate({
           <button
             type="button"
             onClick={() => press("0")}
-            className="flex h-14 items-center justify-center rounded-2xl border border-border/60 bg-background/60 text-2xl font-bold tabular-nums transition-transform hover:bg-muted active:scale-95 sm:h-16"
+            className={KEY_CLASS}
           >
             0
           </button>
@@ -135,7 +152,7 @@ export function ViewerPinGate({
             type="button"
             onClick={backspace}
             aria-label="Hapus"
-            className="flex h-14 items-center justify-center rounded-2xl border border-border/60 bg-background/60 text-xl transition-transform hover:bg-muted active:scale-95 sm:h-16"
+            className={cn(KEY_CLASS, "text-xl")}
           >
             ⌫
           </button>

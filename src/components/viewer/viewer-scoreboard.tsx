@@ -51,12 +51,12 @@ export function ViewerScoreboard({
           <li
             key={team.id}
             className={cn(
-              "relative flex items-center gap-4 overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-5 backdrop-blur sm:gap-6 sm:p-6",
-              isLeader && "border-amber-400/60",
+              "relative flex items-center gap-4 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl sm:gap-6 sm:p-6",
+              isLeader && "border-amber-400/50",
               isFastest && "z-10 animate-ccl-highlight border-transparent",
             )}
             style={{
-              boxShadow: `inset 0 0 0 1px color-mix(in oklch, ${team.color} 45%, transparent)`,
+              boxShadow: `inset 0 0 0 1px color-mix(in oklch, ${team.color} 40%, transparent), 0 18px 40px -24px color-mix(in oklch, ${team.color} 80%, transparent)`,
             }}
           >
             <span
@@ -87,7 +87,10 @@ export function ViewerScoreboard({
 
             <span
               className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black text-white sm:size-16 sm:text-3xl"
-              style={{ backgroundColor: team.color }}
+              style={{
+                backgroundColor: team.color,
+                boxShadow: `0 0 24px -2px color-mix(in oklch, ${team.color} 70%, transparent)`,
+              }}
               aria-hidden
             >
               {teamInitial(team.name)}
@@ -116,6 +119,9 @@ export function ViewerScoreboard({
                 "relative shrink-0 text-5xl leading-none font-black tabular-nums sm:text-6xl",
                 isScoring && "animate-ccl-pop",
               )}
+              style={{
+                textShadow: `0 0 22px color-mix(in oklch, ${team.color} 65%, transparent)`,
+              }}
             >
               {team.score}
             </span>

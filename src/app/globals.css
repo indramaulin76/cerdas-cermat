@@ -54,6 +54,9 @@
   /* Sorotan regu tercepat di layar penonton. */
   --animate-ccl-highlight: ccl-highlight 1.8s ease-in-out infinite;
   --animate-ccl-glow: ccl-glow 1.8s ease-in-out infinite;
+  /* Latar aurora yang bergerak perlahan. */
+  --animate-ccl-aurora: ccl-aurora 16s ease-in-out infinite;
+  --animate-ccl-aurora-slow: ccl-aurora 24s ease-in-out infinite;
 }
 
 :root {
@@ -212,5 +215,16 @@
   }
   50% {
     opacity: 1;
+  }
+}
+
+/* Aurora latar yang mengambang perlahan. */
+@keyframes ccl-aurora {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, -5%, 0) scale(1.15);
   }
 }

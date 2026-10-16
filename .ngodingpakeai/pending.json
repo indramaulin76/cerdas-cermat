@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "002bb70d632768231ad35a91d456df44298fa261",
+  "generatedForCommit": "bc1d6bfc79fec3a27f4394de0661bd8f88fa528e",
   "files": [
     {
       "path": ".gitignore",
@@ -214,7 +214,7 @@
     },
     {
       "path": "src/app/globals.css",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "css",
       "size": 5912
     },
@@ -306,13 +306,13 @@
       "path": "src/components/viewer/viewer-scoreboard.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 4124
+      "size": 4409
     },
     {
       "path": "src/components/viewer/viewer-screen.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 4107
+      "size": 4162
     },
     {
       "path": "src/db/index.ts",
@@ -328,9 +328,9 @@
     },
     {
       "path": "src/hooks/use-mock-live.ts",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2009
+      "size": 4188
     },
     {
       "path": "src/hooks/use-team-buzzer.ts",
