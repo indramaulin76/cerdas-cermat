@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import type { BuzzApiResponse, RecordBuzzRequest } from "@/lib/ccl/api";
 import { recordBuzz, toBuzzEventDto } from "@/server/buzz";
+import { publish } from "@/server/events";
 
 /**
  * Endpoint catat tekanan tombol jawab.
@@ -77,13 +78,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     );
   }
 
+  const event = toBuzzEventDto(outcome.row);
+
   const response: BuzzApiResponse = {
     ok: true,
     duplicate: outcome.duplicate,
     isFirst: outcome.row.isFirst,
     order: outcome.order,
-    event: toBuzzEventDto(outcome.row),
+    event,
   };
+
+  // Siarkan ke moderator, regu lain, dan layar penonton. Tekanan ulang tidak
+  // disiarkan ulang agar urutan tidak bergetar.
+  if (!outcome.duplicate) {
+    publish(sessionId, {
+      type: "buzz.recorded",
+      at: new Date().toISOString(),
+      order: outcome.order,
+      event,
+    });
+  }
 
   return NextResponse.json(response, {
     status: outcome.duplicate ? 200 : 201,

@@ -88,9 +88,30 @@ export type TeamStatusResponse = {
   order: number | null;
 };
 
+/**
+ * Peristiwa realtime sebuah sesi, dialirkan lewat Server-Sent Events (SSE).
+ *
+ * Dashboard regu, moderator, dan layar penonton berlangganan aliran yang sama
+ * sehingga perubahan (soal dibuka, regu menekan) tampil nyaris seketika.
+ */
+export type SessionEvent =
+  /** Moderator membuka soal baru: kunci regu direset & aba-aba dimulai. */
+  | { type: "round.opened"; at: string; round: RoundDto }
+  /** Sebuah regu menekan tombol jawab. */
+  | { type: "buzz.recorded"; at: string; order: number; event: BuzzEventDto }
+  /** Moderator mengosongkan ronde: urutan & kunci kembali bersih. */
+  | { type: "round.reset"; at: string; roundId: string | null }
+  /** Denyut koneksi agar aliran tidak diputus oleh proxy. */
+  | { type: "ping"; at: string };
+
 /** Endpoint catat tekanan tombol jawab untuk sebuah sesi. */
 export function buzzPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/buzz`;
+}
+
+/** Endpoint aliran peristiwa realtime (SSE) untuk sebuah sesi. */
+export function eventsPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/events`;
 }
 
 /** Endpoint membuka soal (membuka ronde baru). */

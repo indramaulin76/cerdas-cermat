@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "c2587dc006ddd68c5675a5ad0459cb60139281d2",
+  "generatedForCommit": "7bf0c57a3af1396b6bcb32636727e584e9422658",
   "files": [
     {
       "path": ".gitignore",
@@ -88,7 +88,7 @@
     },
     {
       "path": "drizzle/0001_tearful_morg.sql",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "sql",
       "size": 3124
     },
@@ -100,13 +100,13 @@
     },
     {
       "path": "drizzle/meta/0001_snapshot.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 9541
     },
     {
       "path": "drizzle/meta/_journal.json",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "json",
       "size": 343
     },
@@ -148,9 +148,15 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/rounds/open/route.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 849
+    },
+    {
+      "path": "src/app/api/sessions/[sessionId]/teams/[teamId]/status/route.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1233
     },
     {
       "path": "src/app/globals.css",
@@ -232,7 +238,7 @@
     },
     {
       "path": "src/db/schema.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 5028
     },
@@ -244,7 +250,7 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3075
     },
@@ -268,15 +274,21 @@
     },
     {
       "path": "src/server/buzz.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 3309
+      "size": 3779
     },
     {
       "path": "src/server/round.ts",
+      "reason": "changed",
+      "language": "typescript",
+      "size": 1764
+    },
+    {
+      "path": "src/server/status.ts",
       "reason": "new",
       "language": "typescript",
-      "size": 1468
+      "size": 2246
     },
     {
       "path": "tsconfig.json",

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import type { OpenRoundResponse, ApiErrorResponse } from "@/lib/ccl/api";
+import { publish } from "@/server/events";
 import { openRound, toRoundDto } from "@/server/round";
 
 type RouteParams = { params: Promise<{ sessionId: string }> };
@@ -20,9 +21,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   const outcome = openRound({ sessionId });
+  const round = toRoundDto(outcome.row);
   const response: OpenRoundResponse = {
     ok: true,
-    round: toRoundDto(outcome.row),
+    round,
   };
+
+  // Siarkan ke semua HP regu (mulai aba-aba) dan moderator/layar penonton.
+  publish(sessionId, {
+    type: "round.opened",
+    at: new Date().toISOString(),
+    round,
+  });
+
   return NextResponse.json(response, { status: 201 });
 }
