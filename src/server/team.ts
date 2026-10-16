@@ -81,6 +81,35 @@ function normalizeHexColor(hex: string): string {
   return hex;
 }
 
+/**
+ * Validasi nama regu.
+ *
+ * Nama dirapikan (spasi ganda disatukan) lalu diperiksa tidak kosong dan tidak
+ * melebihi `MAX_TEAM_NAME_LENGTH`.
+ */
+function checkTeamName(raw: string): {
+  ok: true;
+  name: string;
+} | {
+  ok: false;
+  reason: "empty" | "too_long";
+} {
+  const name = raw.trim().replace(/\s+/g, " ");
+
+  if (name === "") return { ok: false, reason: "empty" } as const;
+  if (name.length > MAX_TEAM_NAME_LENGTH) {
+    return { ok: false, reason: "too_long" } as const;
+  }
+  return { ok: true, name } as const;
+}
+
+/** Validasi warna hex; kembalikan nilai ternormalisasi, atau `null` bila salah. */
+function parseHexColor(raw: string): string | null {
+  const normalized = raw.trim().toLowerCase();
+  if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(normalized)) return null;
+  return normalizeHexColor(normalized);
+}
+
 /** Masukan pembuatan regu. */
 export type CreateTeamInput = {
   sessionId: string;
@@ -110,22 +139,19 @@ export type CreateTeamOutcome =
  * - Bila warna tidak diberikan, dipilih dari palet yang belum terpakai.
  */
 export function createTeam(input: CreateTeamInput): CreateTeamOutcome {
-  const name = input.name.trim().replace(/\s+/g, " ");
-
-  if (name === "") {
-    return { status: "invalid_name", reason: "empty" } as const;
+  const checked = checkTeamName(input.name);
+  if (!checked.ok) {
+    return { status: "invalid_name", reason: checked.reason } as const;
   }
-  if (name.length > MAX_TEAM_NAME_LENGTH) {
-    return { status: "invalid_name", reason: "too_long" } as const;
-  }
+  const name = checked.name;
 
   let color: string | null = null;
   if (input.color !== undefined && input.color !== null && input.color !== "") {
-    const normalized = input.color.trim().toLowerCase();
-    if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(normalized)) {
+    const parsed = parseHexColor(input.color);
+    if (parsed === null) {
       return { status: "invalid_color" } as const;
     }
-    color = normalizeHexColor(normalized);
+    color = parsed;
   }
 
   return db.transaction((tx) => {
@@ -178,6 +204,111 @@ export function createTeam(input: CreateTeamInput): CreateTeamOutcome {
     };
 
     return { status: "created", row: created } as const;
+  });
+}
+
+/** Masukan pembaruan identitas regu (nama &/atau warna). */
+export type UpdateTeamInput = {
+  sessionId: string;
+  teamId: string;
+  /** Nama baru (opsional). */
+  name?: string | null;
+  /** Warna baru, hex (opsional). */
+  color?: string | null;
+};
+
+/** Hasil pembaruan identitas regu. */
+export type UpdateTeamOutcome =
+  | { status: "updated"; row: TeamRow }
+  | { status: "unknown_team"; teamId: string }
+  | { status: "invalid" }
+  | { status: "invalid_name"; reason: "empty" | "too_long" }
+  | { status: "duplicate_name"; name: string }
+  | { status: "invalid_color" };
+
+/**
+ * Ubah nama dan/atau warna sebuah regu.
+ *
+ * Aturan:
+ * - Regu harus ada pada sesi yang diberikan.
+ * - Minimal satu bidang (`name`/`color`) harus diberikan.
+ * - Nama mengikuti aturan yang sama seperti pembuatan (wajib terisi & unik per
+ *   sesi, abaikan huruf besar/kecil, kecuali nama regu itu sendiri).
+ * - Warna harus hex yang valid.
+ * - Skor tidak disentuh oleh fungsi ini.
+ */
+export function updateTeam(input: UpdateTeamInput): UpdateTeamOutcome {
+  const providedName = input.name !== undefined && input.name !== null;
+  const providedColor =
+    input.color !== undefined && input.color !== null && input.color !== "";
+
+  if (!providedName && !providedColor) {
+    return { status: "invalid" } as const;
+  }
+
+  let name: string | null = null;
+  if (providedName) {
+    const checked = checkTeamName(input.name as string);
+    if (!checked.ok) {
+      return { status: "invalid_name", reason: checked.reason } as const;
+    }
+    name = checked.name;
+  }
+
+  let color: string | null = null;
+  if (providedColor) {
+    const parsed = parseHexColor(input.color as string);
+    if (parsed === null) {
+      return { status: "invalid_color" } as const;
+    }
+    color = parsed;
+  }
+
+  return db.transaction((tx) => {
+    const team = tx
+      .select()
+      .from(teams)
+      .where(
+        and(eq(teams.id, input.teamId), eq(teams.sessionId, input.sessionId)),
+      )
+      .get();
+
+    if (!team) {
+      return { status: "unknown_team", teamId: input.teamId } as const;
+    }
+
+    const patch: Partial<Pick<TeamRow, "name" | "color">> = {};
+
+    if (name !== null && name !== team.name) {
+      const others = tx
+        .select()
+        .from(teams)
+        .where(eq(teams.sessionId, input.sessionId))
+        .all()
+        .filter((t) => t.id !== team.id);
+
+      const lowered = name.toLowerCase();
+      if (others.some((t) => t.name.trim().toLowerCase() === lowered)) {
+        return { status: "duplicate_name", name } as const;
+      }
+      patch.name = name;
+    }
+
+    if (color !== null && color !== team.color) {
+      patch.color = color;
+    }
+
+    // Tidak ada yang berubah (mis. nama dikirim sama dengan nama lama).
+    if (Object.keys(patch).length === 0) {
+      return { status: "updated", row: team } as const;
+    }
+
+    tx.update(teams).set(patch).where(eq(teams.id, input.teamId)).run();
+
+    return {
+      status: "updated",
+      row: { ...team, ...patch } as TeamRow,
+    } as const;
   });
 }
 

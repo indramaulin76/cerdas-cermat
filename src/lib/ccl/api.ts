@@ -293,6 +293,27 @@ export type CreateTeamResponse = {
   team: TeamDto;
 };
 
+/** Permintaan mengubah identitas regu (nama dan/atau warna). */
+export type UpdateTeamRequest = {
+  /** Nama baru (opsional). */
+  name?: string;
+  /** Warna baru, hex (opsional). */
+  color?: string;
+};
+
+/** Balasan perubahan identitas regu. */
+export type UpdateTeamResponse = {
+  ok: true;
+  team: TeamDto;
+};
+
+/** Endpoint regu: perbarui/hapus regu tertentu dalam sesi. */
+export function teamPath(sessionId: string, teamId: string): string {
+  return `/api/sessions/${encodeURIComponent(
+    sessionId,
+  )}/teams/${encodeURIComponent(teamId)}`;
+}
+
 /** Permintaan mengubah skor regu. */
 export type UpdateScoreRequest = {
   /** Tambah/kurang poin secara langsung (mis. +100 atau -50). */
