@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "8e035a119c6073c13f5208e296179178b3b19f69",
+  "generatedForCommit": "fa9fa2aa2014171eaeee684d88893146c6917f2f",
   "files": [
     {
       "path": ".gitignore",
@@ -154,7 +154,7 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/auth/moderator/route.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3032
     },
@@ -162,37 +162,55 @@
       "path": "src/app/api/sessions/[sessionId]/buzz/route.ts",
       "reason": "needs_summary",
       "language": "typescript",
-      "size": 2857
+      "size": 3640
     },
     {
       "path": "src/app/api/sessions/[sessionId]/events/route.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2053
+      "size": 2493
     },
     {
       "path": "src/app/api/sessions/[sessionId]/round/status/route.ts",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 1227
+      "size": 1375
     },
     {
       "path": "src/app/api/sessions/[sessionId]/rounds/open/route.ts",
       "reason": "changed",
       "language": "typescript",
-      "size": 1349
+      "size": 1708
     },
     {
       "path": "src/app/api/sessions/[sessionId]/rounds/reset/route.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1417
+    },
+    {
+      "path": "src/app/api/sessions/[sessionId]/settings/route.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2583
+    },
+    {
+      "path": "src/app/api/sessions/[sessionId]/teams/[teamId]/score/route.ts",
+      "reason": "needs_summary",
+      "language": "typescript",
+      "size": 2994
     },
     {
       "path": "src/app/api/sessions/[sessionId]/teams/[teamId]/status/route.ts",
       "reason": "needs_summary",
       "language": "typescript",
       "size": 1233
+    },
+    {
+      "path": "src/app/api/sessions/[sessionId]/teams/route.ts",
+      "reason": "needs_summary",
+      "language": "typescript",
+      "size": 870
     },
     {
       "path": "src/app/globals.css",
@@ -288,7 +306,7 @@
       "path": "src/lib/ccl/api.ts",
       "reason": "changed",
       "language": "typescript",
-      "size": 5756
+      "size": 9015
     },
     {
       "path": "src/lib/ccl/types.ts",
@@ -310,7 +328,7 @@
     },
     {
       "path": "src/server/auth.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3680
     },
@@ -318,7 +336,7 @@
       "path": "src/server/buzz.ts",
       "reason": "needs_summary",
       "language": "typescript",
-      "size": 6075
+      "size": 7474
     },
     {
       "path": "src/server/events.ts",
@@ -328,15 +346,33 @@
     },
     {
       "path": "src/server/round.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 4064
+    },
+    {
+      "path": "src/server/session.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3207
+    },
+    {
+      "path": "src/server/snapshot.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1328
     },
     {
       "path": "src/server/status.ts",
       "reason": "needs_summary",
       "language": "typescript",
       "size": 2323
+    },
+    {
+      "path": "src/server/team.ts",
+      "reason": "needs_summary",
+      "language": "typescript",
+      "size": 3030
     },
     {
       "path": "tsconfig.json",
