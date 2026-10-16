@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const session = toSessionDetailDto(createSession({ title: trimmed }));
+  const session = toSessionDetailDto(await createSession({ title: trimmed }));
   const response: CreateSessionResponse = { ok: true, session };
   return NextResponse.json(response, { status: 201 });
 }
@@ -84,6 +84,6 @@ export async function GET() {
     return errorResponse(gate.error, gate.message, gate.status);
   }
 
-  const response: SessionsListResponse = { ok: true, sessions: listSessions() };
+  const response: SessionsListResponse = { ok: true, sessions: await listSessions() };
   return NextResponse.json(response);
 }

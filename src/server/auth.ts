@@ -76,16 +76,16 @@ export function verifyRoleToken(
 }
 
 /** Cocokkan PIN sebuah peran dengan yang tersimpan pada sesi. */
-export function verifyRolePin(
+export async function verifyRolePin(
   sessionId: string,
   role: RoleId,
   pin: string,
-): PinCheck {
-  const row = db
+): Promise<PinCheck> {
+  const [row] = await db
     .select({ pin: rolePinColumn(role) })
     .from(sessions)
     .where(eq(sessions.id, sessionId))
-    .get();
+    .limit(1);
 
   if (!row) return "no_session";
   if (!row.pin) return "no_pin";
@@ -111,11 +111,11 @@ export async function requireRole(
   sessionId: string,
   role: RoleId,
 ): Promise<RoleGate> {
-  const row = db
+  const [row] = await db
     .select({ pin: rolePinColumn(role) })
     .from(sessions)
     .where(eq(sessions.id, sessionId))
-    .get();
+    .limit(1);
 
   if (!row) {
     return {
@@ -149,7 +149,7 @@ export async function requireAnyRole(
   sessionId: string,
   roles: RoleId[],
 ): Promise<RoleGate> {
-  const row = db
+  const [row] = await db
     .select({
       moderatorPin: sessions.moderatorPin,
       viewerPin: sessions.viewerPin,
@@ -157,7 +157,7 @@ export async function requireAnyRole(
     })
     .from(sessions)
     .where(eq(sessions.id, sessionId))
-    .get();
+    .limit(1);
   if (!row) {
     return {
       ok: false,
@@ -213,11 +213,11 @@ export function verifyModeratorToken(
 }
 
 /** Cocokkan PIN moderator dengan yang tersimpan pada sesi. */
-export function verifyModeratorPin(
+export async function verifyModeratorPin(
   sessionId: string,
   pin: string,
-): PinCheck {
-  return verifyRolePin(sessionId, "moderator", pin);
+): Promise<PinCheck> {
+  return await verifyRolePin(sessionId, "moderator", pin);
 }
 
 /** Apakah permintaan saat ini sudah terautentikasi sebagai moderator. */
@@ -258,8 +258,8 @@ export function verifyViewerToken(sessionId: string, token: string): boolean {
 }
 
 /** Cocokkan PIN layar penonton dengan yang tersimpan pada sesi. */
-export function verifyViewerPin(sessionId: string, pin: string): PinCheck {
-  return verifyRolePin(sessionId, "viewer", pin);
+export async function verifyViewerPin(sessionId: string, pin: string): Promise<PinCheck> {
+  return await verifyRolePin(sessionId, "viewer", pin);
 }
 
 /** Apakah permintaan saat ini sudah terautentikasi sebagai penonton. */
@@ -295,8 +295,8 @@ export function verifyTeamToken(sessionId: string, token: string): boolean {
 }
 
 /** Cocokkan PIN regu dengan yang tersimpan pada sesi. */
-export function verifyTeamPin(sessionId: string, pin: string): PinCheck {
-  return verifyRolePin(sessionId, "team", pin);
+export async function verifyTeamPin(sessionId: string, pin: string): Promise<PinCheck> {
+  return await verifyRolePin(sessionId, "team", pin);
 }
 
 /** Apakah permintaan saat ini sudah terautentikasi sebagai HP regu. */

@@ -32,14 +32,17 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const status = getRoundStatus(sessionId);
+  const [status, session] = await Promise.all([
+    getRoundStatus(sessionId),
+    getSession(sessionId),
+  ]);
   const response: RoundStatusResponse = {
     ok: true,
     phase: status.phase,
     round: status.round ? toRoundDto(status.round) : null,
     ranking: status.ranking.map(toBuzzEventDto),
     winner: status.winner ? toBuzzEventDto(status.winner) : null,
-    cooldownSeconds: getSession(sessionId)?.cooldownSeconds ?? 10,
+    cooldownSeconds: session?.cooldownSeconds ?? 10,
     serverTime: new Date().toISOString(),
   };
   return NextResponse.json(response);

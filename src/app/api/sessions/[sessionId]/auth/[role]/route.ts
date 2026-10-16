@@ -95,7 +95,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_pin", "PIN wajib diisi.", 400);
   }
 
-  const check = verifyRolePin(sessionId, role, pin);
+  const check = await verifyRolePin(sessionId, role, pin);
 
   if (check === "no_session") {
     return errorResponse(

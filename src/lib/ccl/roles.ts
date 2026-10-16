@@ -1,10 +1,9 @@
 /**
  * Definisi peran akses sesi.
  *
- * Menyatukan label, halaman tujuan, warna aksen, dan penurunan PIN untuk tiap
- * peran (moderator, layar penonton, HP regu) supaya kartu admin dan gerbang PIN
- * selalu konsisten. PIN di sini masih deterministik untuk data tiruan; backend
- * nanti menyimpan PIN sungguhan per sesi.
+ * Menyatukan label, halaman tujuan, dan warna aksen untuk tiap peran
+ * (moderator, layar penonton, HP regu) supaya kartu admin dan halaman
+ * peran selalu konsisten. PIN disimpan per sesi oleh backend.
  */
 
 export type RoleId = "moderator" | "viewer" | "team";
@@ -72,25 +71,6 @@ export const ROLE_INFO: Record<RoleId, RoleInfo> = {
     },
   },
 };
-
-/**
- * PIN peran yang stabil untuk sebuah sesi (deterministik).
- *
- * Nilai sama selalu dihasilkan untuk pasangan sesi+peran yang sama, sehingga
- * "link dan PIN tetap sama" saat admin membuka ulang detail, dan gerbang PIN
- * bisa memeriksa PIN yang sama tanpa server. Backend nanti menyimpan PIN
- * sungguhan di basis data.
- */
-export function getRolePin(sessionId: string, role: RoleId): string {
-  const input = `${sessionId}:${role}`;
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  const value = 1000 + (Math.abs(hash) % 9000);
-  return String(value);
-}
 
 /** Path halaman peran untuk sebuah sesi (dipakai saat membuat link admin). */
 export function getRolePath(sessionId: string, role: RoleId): string {

@@ -21,13 +21,13 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   const gate = await requireModerator(sessionId);
   if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
 
-  const outcome = resetRound(sessionId);
-  publish(sessionId, {
+  const outcome = await resetRound(sessionId);
+  await publish(sessionId, {
     type: "round.reset",
     at: new Date().toISOString(),
     roundId: outcome.closed?.id ?? null,
   });
-  publish(sessionId, {
+  await publish(sessionId, {
     type: "highlight.updated",
     at: new Date().toISOString(),
     highlight: { teamId: null, event: null },

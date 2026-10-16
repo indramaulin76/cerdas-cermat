@@ -1,8 +1,8 @@
 /**
  * Logika server untuk mencatat tekanan tombol jawab regu.
  *
- * Semua penulisan lewat satu transaksi SQLite yang sinkron, sehingga dua regu
- * yang menekan nyaris bersamaan tetap menghasilkan satu pemenang secara
+ * Semua penulisan lewat satu transaksi database, sehingga dua regu yang
+ * menekan nyaris bersamaan tetap menghasilkan satu pemenang secara
  * konsisten. Urutan akhir dihitung ulang setiap ada tekanan baru memakai
  * `reactionMs` (kecepatan reaksi yang sama-sama diukur dari aba-aba), dan bila
  * dua reaksi bedanya dalam batas toleransi, waktu tiba di server yang
@@ -101,21 +101,21 @@ export function rankBuzzes(rows: BuzzEventRow[]): BuzzEventRow[] {
  * - Setelah setiap tekanan baru, urutan & penanda tercepat dihitung ulang
  *   sehingga seri hampir bersamaan tetap konsisten.
  */
-export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
+export function recordBuzz(input: RecordBuzzInput): Promise<RecordBuzzOutcome> {
   const { sessionId, teamId } = input;
 
-  return db.transaction((tx) => {
-    const team = tx
+  return db.transaction(async (tx) => {
+    const [team] = await tx
       .select({ id: teams.id })
       .from(teams)
       .where(and(eq(teams.id, teamId), eq(teams.sessionId, sessionId)))
-      .get();
+      .limit(1);
 
     if (!team) {
       return { status: "unknown_team", teamId } as const;
     }
 
-    const round = tx
+    const [round] = await tx
       .select()
       .from(rounds)
       .where(
@@ -125,7 +125,8 @@ export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
           eq(rounds.status, "open"),
         ),
       )
-      .get();
+      .for("update")
+      .limit(1);
     if (
       !round ||
       round.startedAt === null ||
@@ -142,11 +143,11 @@ export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
     const roundId = round.id;
     const scope = and(eq(buzzEvents.sessionId, sessionId), roundScope(roundId));
 
-    const existing = tx
+    const [existing] = await tx
       .select()
       .from(buzzEvents)
       .where(and(scope, eq(buzzEvents.teamId, teamId)))
-      .get();
+      .limit(1);
 
     if (!existing) {
       const row: BuzzEventRow = {
@@ -160,24 +161,23 @@ export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
         answerStatus: null,
         createdAt: receivedAt,
       };
-      tx.insert(buzzEvents).values(row).run();
+      await tx.insert(buzzEvents).values(row);
     }
 
     // Hitung ulang urutan seluruh tekanan ronde ini, lalu simpan penanda
     // tercepat bila berubah.
-    const rows = tx.select().from(buzzEvents).where(scope).all();
+    const rows = await tx.select().from(buzzEvents).where(scope);
     const ranked = rankBuzzes(rows);
 
-    ranked.forEach((row, index) => {
+    for (const [index, row] of ranked.entries()) {
       const shouldBeFirst = index === 0;
       if (row.isFirst !== shouldBeFirst) {
-        tx.update(buzzEvents)
+        await tx.update(buzzEvents)
           .set({ isFirst: shouldBeFirst })
-          .where(eq(buzzEvents.id, row.id))
-          .run();
+          .where(eq(buzzEvents.id, row.id));
         row.isFirst = shouldBeFirst;
       }
-    });
+    }
 
     const index = ranked.findIndex((row) => row.teamId === teamId);
     const row = ranked[index];
@@ -220,13 +220,13 @@ export function toHighlightDto(row: BuzzEventRow | null): HighlightDto {
 }
 
 /** Cari ronde yang sedang terbuka untuk sebuah sesi. */
-function findOpenRoundId(sessionId: string): string | null {
-  const open = db
+async function findOpenRoundId(sessionId: string): Promise<string | null> {
+  const [open] = await db
     .select({ id: rounds.id })
     .from(rounds)
     .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
     .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-    .get();
+    .limit(1);
   return open?.id ?? null;
 }
 
@@ -252,12 +252,14 @@ export type BuzzOrderOutcome = {
  * penanganan seri hampir bersamaan), sehingga moderator melihat hasil yang
  * konsisten dengan yang disiarkan ke HP regu.
  */
-export function getBuzzOrder(input: BuzzOrderInput): BuzzOrderOutcome {
+export async function getBuzzOrder(
+  input: BuzzOrderInput,
+): Promise<BuzzOrderOutcome> {
   const { sessionId } = input;
-  const roundId = input.roundId ?? findOpenRoundId(sessionId);
+  const roundId = input.roundId ?? (await findOpenRoundId(sessionId));
 
   const scope = and(eq(buzzEvents.sessionId, sessionId), roundScope(roundId));
-  const ranking = rankBuzzes(db.select().from(buzzEvents).where(scope).all());
+  const ranking = rankBuzzes(await db.select().from(buzzEvents).where(scope));
 
   return { roundId, ranking, winner: ranking[0] ?? null };
 }

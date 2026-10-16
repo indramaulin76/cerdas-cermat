@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return errorResponse(gate.error, gate.message, gate.status);
   }
 
-  const outcome = openRound({ sessionId });
+  const outcome = await openRound({ sessionId });
   if (outcome.status === "inactive_session") {
     return errorResponse(
       "inactive_session",
@@ -45,11 +45,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   // Sinkronisasi aba-aba: semua klien memakai `armAt` yang sama, bukan jam
   // lokal masing-masing, supaya reaksi terukur dari momen yang adil.
-  const cooldownSeconds = getSession(sessionId)?.cooldownSeconds ?? 10;
+  const cooldownSeconds = (await getSession(sessionId))?.cooldownSeconds ?? 10;
   const armAt = round.startedAt ?? new Date().toISOString();
 
   // Siarkan ke semua HP regu (mulai aba-aba) dan moderator/layar penonton.
-  publish(sessionId, {
+  await publish(sessionId, {
     type: "round.opened",
     at: new Date().toISOString(),
     round,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   });
 
   // Soal baru: sorotan regu tercepat dari soal sebelumnya dibersihkan.
-  publish(sessionId, {
+  await publish(sessionId, {
     type: "highlight.updated",
     at: new Date().toISOString(),
     highlight: toHighlightDto(null),

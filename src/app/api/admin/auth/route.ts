@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const admin = verifyAdminCredentials(email, password);
+  const admin = await verifyAdminCredentials(email, password);
   if (!admin) {
     return errorResponse(
       "invalid_credentials",

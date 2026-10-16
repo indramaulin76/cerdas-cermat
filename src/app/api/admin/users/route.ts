@@ -24,7 +24,7 @@ function errorResponse(error: string, message: string, status: number) {
 export async function GET() {
   const gate = await requireSystemAdmin();
   if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
-  const response: AdminUsersResponse = { ok: true, users: listAdminUsers() };
+  const response: AdminUsersResponse = { ok: true, users: await listAdminUsers() };
   return NextResponse.json(response);
 }
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const result = saveAdminUser({
+  const result = await saveAdminUser({
     name: input.name,
     email: input.email,
     password: input.password,
@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
     return errorResponse("invalid_user", "Data akun tidak valid.", 400);
   }
 
-  const result = saveAdminUser({
+  const result = await saveAdminUser({
     id: input.id,
     name: input.name,
     email: input.email,
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest) {
       409,
     );
   }
-  const result = deleteAdminUser(id);
+  const result = await deleteAdminUser(id);
   if (result === "unknown_user") {
     return errorResponse("unknown_user", "Akun panitia tidak ditemukan.", 404);
   }

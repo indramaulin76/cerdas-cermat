@@ -43,7 +43,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return errorResponse(gate.error, gate.message, gate.status);
   }
 
-  const row = getSession(sessionId);
+  const row = await getSession(sessionId);
   if (!row) {
     return errorResponse(
       "unknown_session",
@@ -82,7 +82,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_status", "Status sesi tidak valid.", 400);
   }
 
-  const row = updateSessionStatus(sessionId, status);
+  const row = await updateSessionStatus(sessionId, status);
   if (!row) {
     return errorResponse(
       "unknown_session",
@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       404,
     );
   }
-  publish(sessionId, {
+  await publish(sessionId, {
     type: "session.updated",
     at: new Date().toISOString(),
     session: toSessionDto(row),

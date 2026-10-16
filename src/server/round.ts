@@ -22,18 +22,20 @@ export type OpenRoundOutcome =
   | { status: "opened"; row: RoundRow }
   | { status: "inactive_session" };
 
-function findOpenRound(sessionId: string): RoundRow | undefined {
-  return db
+async function findOpenRound(sessionId: string): Promise<RoundRow | undefined> {
+  const [round] = await db
     .select()
     .from(rounds)
     .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
     .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-    .get();
+    .for("update")
+    .limit(1);
+  return round;
 }
 
-function getRanking(roundId: string): BuzzEventRow[] {
+async function getRanking(roundId: string): Promise<BuzzEventRow[]> {
   return rankBuzzes(
-    db.select().from(buzzEvents).where(eq(buzzEvents.roundId, roundId)).all(),
+    await db.select().from(buzzEvents).where(eq(buzzEvents.roundId, roundId)),
   );
 }
 
@@ -67,11 +69,13 @@ export type RoundStatusOutcome = {
   winner: BuzzEventRow | null;
 };
 
-export function getRoundStatus(sessionId: string): RoundStatusOutcome {
-  const round = findOpenRound(sessionId);
+export async function getRoundStatus(
+  sessionId: string,
+): Promise<RoundStatusOutcome> {
+  const round = await findOpenRound(sessionId);
   if (!round) return { phase: "idle", round: null, ranking: [], winner: null };
 
-  const ranking = getRanking(round.id);
+  const ranking = await getRanking(round.id);
   const phase: QuestionPhase = round.answeringTeamId
     ? "answering"
     : round.awaitingNext
@@ -80,10 +84,10 @@ export function getRoundStatus(sessionId: string): RoundStatusOutcome {
   return { phase, round, ranking, winner: ranking[0] ?? null };
 }
 
-export function getRoundStateEvent(
+export async function getRoundStateEvent(
   sessionId: string,
-): Extract<SessionEvent, { type: "round.state" }> | null {
-  const status = getRoundStatus(sessionId);
+): Promise<Extract<SessionEvent, { type: "round.state" }> | null> {
+  const status = await getRoundStatus(sessionId);
   if (!status.round) return null;
   return {
     type: "round.state",
@@ -96,18 +100,19 @@ export function getRoundStateEvent(
 
 export type ResetRoundOutcome = { closed: RoundRow | null };
 
-export function resetRound(sessionId: string): ResetRoundOutcome {
-  return db.transaction((tx) => {
-    const round = tx
+export function resetRound(sessionId: string): Promise<ResetRoundOutcome> {
+  return db.transaction(async (tx) => {
+    const [round] = await tx
       .select()
       .from(rounds)
       .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
       .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-      .get();
+      .for("update")
+      .limit(1);
     if (!round) return { closed: null } as const;
 
     const now = new Date();
-    tx.update(rounds)
+    const [closed] = await tx.update(rounds)
       .set({
         status: "closed",
         answeringTeamId: null,
@@ -116,33 +121,25 @@ export function resetRound(sessionId: string): ResetRoundOutcome {
         endedAt: now,
       })
       .where(eq(rounds.id, round.id))
-      .run();
-    return {
-      closed: {
-        ...round,
-        status: "closed",
-        answeringTeamId: null,
-        answerStartedAt: null,
-        awaitingNext: false,
-        endedAt: now,
-      },
-    } as const;
+      .returning();
+    return { closed } as const;
   });
 }
 
-export function openRound(input: OpenRoundInput): OpenRoundOutcome {
-  return db.transaction((tx) => {
-    const session = tx
+export function openRound(input: OpenRoundInput): Promise<OpenRoundOutcome> {
+  return db.transaction(async (tx) => {
+    const [session] = await tx
       .select({ status: sessions.status })
       .from(sessions)
       .where(eq(sessions.id, input.sessionId))
-      .get();
+      .for("update")
+      .limit(1);
     if (!session || session.status !== "active") {
       return { status: "inactive_session" } as const;
     }
 
     const now = new Date();
-    tx.update(rounds)
+    await tx.update(rounds)
       .set({
         status: "closed",
         answeringTeamId: null,
@@ -150,15 +147,14 @@ export function openRound(input: OpenRoundInput): OpenRoundOutcome {
         awaitingNext: false,
         endedAt: now,
       })
-      .where(and(eq(rounds.sessionId, input.sessionId), eq(rounds.status, "open")))
-      .run();
+      .where(and(eq(rounds.sessionId, input.sessionId), eq(rounds.status, "open")));
 
-    const lastRound = tx
+    const [lastRound] = await tx
       .select()
       .from(rounds)
       .where(eq(rounds.sessionId, input.sessionId))
       .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-      .get();
+      .limit(1);
     const row: RoundRow = {
       id: randomUUID(),
       sessionId: input.sessionId,
@@ -171,8 +167,8 @@ export function openRound(input: OpenRoundInput): OpenRoundOutcome {
       endedAt: null,
       createdAt: now,
     };
-    tx.insert(rounds).values(row).run();
-    return { status: "opened", row } as const;
+    const [created] = await tx.insert(rounds).values(row).returning();
+    return { status: "opened", row: created } as const;
   });
 }
 
@@ -183,17 +179,18 @@ export type SelectTeamOutcome =
 export function selectAnsweringTeam(
   sessionId: string,
   teamId: string,
-): SelectTeamOutcome {
-  return db.transaction((tx) => {
-    const round = tx
+): Promise<SelectTeamOutcome> {
+  return db.transaction(async (tx) => {
+    const [round] = await tx
       .select()
       .from(rounds)
       .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
       .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-      .get();
+      .for("update")
+      .limit(1);
     if (!round) return { status: "no_open_round" } as const;
 
-    const candidate = tx
+    const [candidate] = await tx
       .select()
       .from(buzzEvents)
       .where(
@@ -202,7 +199,7 @@ export function selectAnsweringTeam(
           eq(buzzEvents.teamId, teamId),
         ),
       )
-      .get();
+      .limit(1);
     if (!candidate) return { status: "team_not_buzzed" } as const;
     if (candidate.answerStatus !== null) return { status: "already_answered" } as const;
 
@@ -212,34 +209,25 @@ export function selectAnsweringTeam(
 
     const now = new Date();
     if (round.answeringTeamId) {
-      tx.update(buzzEvents)
+      await tx.update(buzzEvents)
         .set({ answerStatus: "timeout" })
         .where(
           and(
             eq(buzzEvents.roundId, round.id),
             eq(buzzEvents.teamId, round.answeringTeamId),
           ),
-        )
-        .run();
+        );
     }
 
-    tx.update(rounds)
+    const [updated] = await tx.update(rounds)
       .set({
         answeringTeamId: teamId,
         answerStartedAt: now,
         awaitingNext: false,
       })
       .where(eq(rounds.id, round.id))
-      .run();
-    return {
-      status: "selected",
-      round: {
-        ...round,
-        answeringTeamId: teamId,
-        answerStartedAt: now,
-        awaitingNext: false,
-      },
-    } as const;
+      .returning();
+    return { status: "selected", round: updated } as const;
   });
 }
 
@@ -248,41 +236,37 @@ type AdvanceOutcome =
   | { status: "waiting"; round: RoundRow }
   | { status: "no_open_round" | "not_waiting" | "no_candidate" };
 
-export function advanceToNextTeam(sessionId: string): AdvanceOutcome {
-  return db.transaction((tx) => {
-    const round = tx
+export function advanceToNextTeam(sessionId: string): Promise<AdvanceOutcome> {
+  return db.transaction(async (tx) => {
+    const [round] = await tx
       .select()
       .from(rounds)
       .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
       .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-      .get();
+      .for("update")
+      .limit(1);
     if (!round) return { status: "no_open_round" } as const;
     if (!round.awaitingNext) return { status: "not_waiting" } as const;
 
     const ranking = rankBuzzes(
-      tx.select().from(buzzEvents).where(eq(buzzEvents.roundId, round.id)).all(),
+      await tx.select().from(buzzEvents).where(eq(buzzEvents.roundId, round.id)),
     );
     const candidate = nextAvailableTeam(ranking);
     if (!candidate) return { status: "no_candidate" } as const;
 
     const now = new Date();
-    tx.update(rounds)
+    const [updated] = await tx.update(rounds)
       .set({
         answeringTeamId: candidate.teamId,
         answerStartedAt: now,
         awaitingNext: false,
       })
       .where(eq(rounds.id, round.id))
-      .run();
+      .returning();
     return {
       status: "advanced",
       team: candidate,
-      round: {
-        ...round,
-        answeringTeamId: candidate.teamId,
-        answerStartedAt: now,
-        awaitingNext: false,
-      },
+      round: updated,
     } as const;
   });
 }
@@ -291,28 +275,29 @@ export type AnswerOutcome =
   | { status: "recorded"; round: RoundRow; team: TeamRow; delta: number }
   | { status: "no_open_round" | "no_answering_team" | "invalid_penalty" | "unknown_team" };
 
-export function recordAnswerResult(
+export async function recordAnswerResult(
   sessionId: string,
   result: "correct" | "wrong",
   penalty?: number,
-): AnswerOutcome {
+): Promise<AnswerOutcome> {
   if (result === "wrong" && ![50, 75, 100].includes(penalty ?? 0)) {
     return { status: "invalid_penalty" };
   }
 
-  return db.transaction((tx) => {
-    const round = tx
+  return db.transaction(async (tx) => {
+    const [round] = await tx
       .select()
       .from(rounds)
       .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
       .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
-      .get();
+      .for("update")
+      .limit(1);
     if (!round) return { status: "no_open_round" } as const;
     if (!round.answeringTeamId || !round.answerStartedAt) {
       return { status: "no_answering_team" } as const;
     }
 
-    const buzz = tx
+    const [buzz] = await tx
       .select()
       .from(buzzEvents)
       .where(
@@ -321,12 +306,12 @@ export function recordAnswerResult(
           eq(buzzEvents.teamId, round.answeringTeamId),
         ),
       )
-      .get();
-    const team = tx
+      .limit(1);
+    const [team] = await tx
       .select()
       .from(teams)
       .where(and(eq(teams.id, round.answeringTeamId), eq(teams.sessionId, sessionId)))
-      .get();
+      .limit(1);
     if (!buzz || !team || buzz.answerStatus !== null) {
       return { status: "no_answering_team" } as const;
     }
@@ -334,11 +319,14 @@ export function recordAnswerResult(
     const delta = result === "correct" ? 100 : -(penalty ?? 0);
     const now = new Date();
     const updatedTeam = { ...team, score: team.score + delta };
-    tx.update(teams).set({ score: updatedTeam.score }).where(eq(teams.id, team.id)).run();
-    tx.update(buzzEvents)
+    const [savedTeam] = await tx
+      .update(teams)
+      .set({ score: updatedTeam.score })
+      .where(eq(teams.id, team.id))
+      .returning();
+    await tx.update(buzzEvents)
       .set({ answerStatus: result })
-      .where(eq(buzzEvents.id, buzz.id))
-      .run();
+      .where(eq(buzzEvents.id, buzz.id));
 
     const updatedRound: RoundRow =
       result === "correct"
@@ -356,7 +344,7 @@ export function recordAnswerResult(
             answerStartedAt: null,
             awaitingNext: true,
           };
-    tx.update(rounds)
+    const [savedRound] = await tx.update(rounds)
       .set({
         status: updatedRound.status,
         answeringTeamId: updatedRound.answeringTeamId,
@@ -365,11 +353,11 @@ export function recordAnswerResult(
         endedAt: updatedRound.endedAt,
       })
       .where(eq(rounds.id, round.id))
-      .run();
+      .returning();
     return {
       status: "recorded",
-      round: updatedRound,
-      team: updatedTeam,
+      round: savedRound,
+      team: savedTeam,
       delta,
     } as const;
   });

@@ -2,7 +2,7 @@
  * Autentikasi akun panitia untuk mengelola sesi lomba.
  *
  * `CCL_ADMIN_EMAIL` dan `CCL_ADMIN_PASSWORD` menyediakan akun bootstrap;
- * akun tambahan disimpan dalam SQLite dengan hash scrypt.
+ * akun tambahan disimpan di PostgreSQL dengan hash scrypt.
  */
 
 import "server-only";
@@ -110,16 +110,16 @@ export function verifyAdminPassword(password: string): boolean {
   return safeEqualSecret(password, getBootstrapCredentials().password);
 }
 
-export function verifyAdminCredentials(
+export async function verifyAdminCredentials(
   email: string,
   password: string,
-): AdminIdentity | null {
+): Promise<AdminIdentity | null> {
   const normalizedEmail = email.trim().toLowerCase();
-  const row = db
+  const [row] = await db
     .select()
     .from(users)
     .where(eq(users.email, normalizedEmail))
-    .get();
+    .limit(1);
 
   if (row) {
     return verifyPasswordHash(password, row.passwordHash) ? toIdentity(row) : null;
@@ -154,7 +154,11 @@ export async function getCurrentAdmin(): Promise<AdminIdentity | null> {
       role: "admin",
     };
   }
-  const row = db.select().from(users).where(eq(users.id, id)).get();
+  const [row] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
   return row ? toIdentity(row) : null;
 }
 
@@ -190,16 +194,15 @@ export async function requireSystemAdmin(): Promise<AdminGate> {
 }
 
 /** Akun panitia yang bisa ditampilkan (tanpa hash kata sandi). */
-export function listAdminUsers(): AdminUserDto[] {
-  return db
+export async function listAdminUsers(): Promise<AdminUserDto[]> {
+  const rows = await db
     .select()
     .from(users)
-    .orderBy(asc(users.createdAt), asc(users.email))
-    .all()
-    .map((row) => ({
-      ...toIdentity(row),
-      createdAt: row.createdAt.toISOString(),
-    }));
+    .orderBy(asc(users.createdAt), asc(users.email));
+  return rows.map((row) => ({
+    ...toIdentity(row),
+    createdAt: row.createdAt.toISOString(),
+  }));
 }
 
 export type SaveAdminUserInput = {
@@ -215,9 +218,9 @@ export type SaveAdminUserOutcome =
   | { status: "duplicate_email" }
   | { status: "unknown_user" };
 
-export function saveAdminUser(
+export async function saveAdminUser(
   input: SaveAdminUserInput,
-): SaveAdminUserOutcome {
+): Promise<SaveAdminUserOutcome> {
   const name = input.name.trim().replace(/\s+/g, " ");
   const email = input.email.trim().toLowerCase();
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -230,61 +233,73 @@ export function saveAdminUser(
   }
   if (!input.id && !input.password) return { status: "invalid" };
 
-  const existing = db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .get();
-  if (existing && existing.id !== input.id) return { status: "duplicate_email" };
-
   const now = new Date();
-  if (input.id) {
-    const current = db.select().from(users).where(eq(users.id, input.id)).get();
-    if (!current) return { status: "unknown_user" };
-    const patch = {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    if (existing && existing.id !== input.id) {
+      return { status: "duplicate_email" } as const;
+    }
+
+    if (input.id) {
+      const [current] = await tx
+        .select()
+        .from(users)
+        .where(eq(users.id, input.id))
+        .limit(1);
+      if (!current) return { status: "unknown_user" } as const;
+      const patch = {
+        name,
+        email,
+        ...(input.password
+          ? { passwordHash: hashAdminPassword(input.password) }
+          : {}),
+      };
+      const [updated] = await tx
+        .update(users)
+        .set(patch)
+        .where(eq(users.id, input.id))
+        .returning();
+      return {
+        status: "saved",
+        user: {
+          ...toIdentity(updated),
+          createdAt: updated.createdAt.toISOString(),
+        },
+      } as const;
+    }
+
+    const row = {
+      id: randomUUID(),
       name,
       email,
-      ...(input.password ? { passwordHash: hashAdminPassword(input.password) } : {}),
+      passwordHash: hashAdminPassword(input.password!),
+      role: "panitia" as const,
+      createdAt: now,
     };
-    db.update(users).set(patch).where(eq(users.id, input.id)).run();
+    const [created] = await tx.insert(users).values(row).returning();
     return {
       status: "saved",
       user: {
-        id: current.id,
-        name,
-        email,
-        role: current.role,
-        createdAt: current.createdAt.toISOString(),
+        ...toIdentity(created),
+        createdAt: created.createdAt.toISOString(),
       },
-    };
-  }
-
-  const row = {
-    id: randomUUID(),
-    name,
-    email,
-    passwordHash: hashAdminPassword(input.password!),
-    role: "panitia" as const,
-    createdAt: now,
-  };
-  db.insert(users).values(row).run();
-  return {
-    status: "saved",
-    user: {
-      id: row.id,
-      name,
-      email,
-      role: row.role,
-      createdAt: now.toISOString(),
-    },
-  };
+    } as const;
+  });
 }
 
 export type DeleteAdminUserOutcome = "deleted" | "unknown_user";
 
-export function deleteAdminUser(id: string): DeleteAdminUserOutcome {
-  const result = db.delete(users).where(eq(users.id, id)).run();
-  return result.changes > 0 ? "deleted" : "unknown_user";
+export async function deleteAdminUser(
+  id: string,
+): Promise<DeleteAdminUserOutcome> {
+  const rows = await db.delete(users).where(eq(users.id, id)).returning({
+    id: users.id,
+  });
+  return rows.length > 0 ? "deleted" : "unknown_user";
 }
 
 /**

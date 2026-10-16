@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const gate = await requireTeam(sessionId);
   if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
 
-  const outcome = getTeamStatus({ sessionId, teamId });
+  const outcome = await getTeamStatus({ sessionId, teamId });
 
   if (outcome.status === "unknown_team") {
     return errorResponse(

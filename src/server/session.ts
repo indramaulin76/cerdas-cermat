@@ -54,8 +54,8 @@ export function toSessionDetailDto(row: SessionRow): SessionDetailDto {
 }
 
 /** Ambil semua sesi, terbaru lebih dulu, beserta jumlah regu peserta. */
-export function listSessions(): SessionSummaryDto[] {
-  const rows = db
+export async function listSessions(): Promise<SessionSummaryDto[]> {
+  const rows = await db
     .select({
       id: sessions.id,
       title: sessions.title,
@@ -66,8 +66,7 @@ export function listSessions(): SessionSummaryDto[] {
     .from(sessions)
     .leftJoin(teams, eq(teams.sessionId, sessions.id))
     .groupBy(sessions.id)
-    .orderBy(desc(sessions.createdAt))
-    .all();
+    .orderBy(desc(sessions.createdAt));
 
   return rows.map((row) => ({
     id: row.id,
@@ -79,8 +78,13 @@ export function listSessions(): SessionSummaryDto[] {
 }
 
 /** Ambil satu sesi, atau `undefined` bila tak ada. */
-export function getSession(sessionId: string): SessionRow | undefined {
-  return db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
+export async function getSession(sessionId: string): Promise<SessionRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1);
+  return row;
 }
 
 /** Masukan pengaturan sesi. */
@@ -100,19 +104,22 @@ export type SessionStatus = "draft" | "active" | "finished";
 export function updateSessionStatus(
   sessionId: string,
   status: SessionStatus,
-): SessionRow | undefined {
+): Promise<SessionRow | undefined> {
   const now = new Date();
-  const existing = db
-    .select()
-    .from(sessions)
-    .where(eq(sessions.id, sessionId))
-    .get();
-  if (!existing) return undefined;
-  db.update(sessions)
-    .set({ status, updatedAt: now })
-    .where(eq(sessions.id, sessionId))
-    .run();
-  return { ...existing, status, updatedAt: now };
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1);
+    if (!existing) return undefined;
+    const [updated] = await tx
+      .update(sessions)
+      .set({ status, updatedAt: now })
+      .where(eq(sessions.id, sessionId))
+      .returning();
+    return updated;
+  });
 }
 
 /**
@@ -120,9 +127,9 @@ export function updateSessionStatus(
  *
  * Durasi menjawab dibatasi 1..600 detik agar tidak mengganggu jalannya lomba.
  */
-export function updateSessionSettings(
+export async function updateSessionSettings(
   input: UpdateSettingsInput,
-): UpdateSettingsOutcome {
+): Promise<UpdateSettingsOutcome> {
   const { sessionId } = input;
 
   const patch: Partial<Pick<SessionRow, "cooldownSeconds">> = {};
@@ -142,24 +149,24 @@ export function updateSessionSettings(
     return { status: "invalid" } as const;
   }
 
-  return db.transaction((tx) => {
-    const row = tx
+  return db.transaction(async (tx) => {
+    const [row] = await tx
       .select()
       .from(sessions)
       .where(eq(sessions.id, sessionId))
-      .get();
+      .limit(1);
 
     if (!row) {
       return { status: "unknown_session", sessionId } as const;
     }
 
     const now = new Date();
-    tx.update(sessions)
+    const [updated] = await tx.update(sessions)
       .set({ ...patch, updatedAt: now })
       .where(eq(sessions.id, sessionId))
-      .run();
+      .returning();
 
-    return { status: "updated", row: { ...row, ...patch, updatedAt: now } } as const;
+    return { status: "updated", row: updated } as const;
   });
 }
 
@@ -176,17 +183,17 @@ export type CreateSessionInput = {
  * lahir berstatus `draft` sampai admin mengaktifkannya, dan memakai nilai awal
  * pengaturan durasi dari sesi terakhir (atau 10 detik bila belum ada sesi).
  */
-export function createSession(input: CreateSessionInput): SessionRow {
-  const id = generateSessionId(input.title);
+export async function createSession(input: CreateSessionInput): Promise<SessionRow> {
+  const id = await generateSessionId(input.title);
   const pins = generateRolePins();
   const now = new Date();
-  const previousSettings = db
+  const [previousSettings] = await db
     .select({
       cooldownSeconds: sessions.cooldownSeconds,
     })
     .from(sessions)
     .orderBy(desc(sessions.updatedAt), desc(sessions.createdAt))
-    .get();
+    .limit(1);
 
   const row: NewSessionRow = {
     id,
@@ -202,5 +209,6 @@ export function createSession(input: CreateSessionInput): SessionRow {
     updatedAt: now,
   };
 
-  return db.insert(sessions).values(row).returning().get();
+  const [created] = await db.insert(sessions).values(row).returning();
+  return created;
 }

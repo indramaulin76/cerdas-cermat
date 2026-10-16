@@ -11,7 +11,7 @@
  *
  * Komponen ini murni presentasional: ia hanya menggambar tombol sesuai
  * `visual` yang diberikan, tanpa tahu soal state lomba. Logika state ada di
- * `useTeamBuzzer`.
+ * dashboard sesi live.
  */
 
 import type { CSSProperties, ReactNode } from "react";

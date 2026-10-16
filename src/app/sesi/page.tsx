@@ -8,12 +8,7 @@ export const metadata: Metadata = {
     "Daftar sesi lomba milik admin beserta link dan PIN tiap peran.",
 };
 
-/**
- * Halaman daftar sesi untuk admin.
- *
- * Tahap ini memakai data tiruan; sesi buatan admin disimpan di localStorage
- * sampai layer backend menyediakan penyimpanan sungguhan.
- */
+/** Daftar sesi persisten untuk admin. */
 export default function SesiPage() {
   return <SessionList />;
 }

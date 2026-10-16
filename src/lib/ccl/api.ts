@@ -103,7 +103,7 @@ export type TeamStatusResponse = {
 };
 
 /**
- * Peristiwa realtime sebuah sesi, dialirkan lewat Server-Sent Events (SSE).
+ * Peristiwa realtime sebuah sesi, dipublikasikan lewat Ably.
  *
  * Dashboard regu, moderator, dan layar penonton berlangganan aliran yang sama
  * sehingga perubahan (soal dibuka, regu menekan) tampil nyaris seketika.
@@ -182,11 +182,6 @@ export type SessionEvent =
 /** Endpoint catat tekanan tombol jawab untuk sebuah sesi. */
 export function buzzPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/buzz`;
-}
-
-/** Endpoint aliran peristiwa realtime (SSE) untuk sebuah sesi. */
-export function eventsPath(sessionId: string): string {
-  return `/api/sessions/${encodeURIComponent(sessionId)}/events`;
 }
 
 /* ------------------------------ Auth peran sesi ------------------------------ */
@@ -490,17 +485,16 @@ export type ViewerDataResponse = {
 /**
  * Endpoint data sesi & regu untuk layar penonton.
  *
- * Dipakai layar penonton untuk memuat gambaran awal sebelum aliran realtime
- * (SSE) tersambung.
+ * Dipakai layar penonton untuk memuat gambaran awal sebelum terhubung ke Ably.
  */
 export function viewerDataPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/viewer`;
 }
 
 /**
- * Endpoint aliran realtime (SSE) khusus layar penonton.
+ * Endpoint untuk menerima data real-time khusus layar penonton.
  *
- * Sama seperti kanal umum `/events`, tetapi hanya bisa diakses penonton yang
+ * Sama seperti kanal umum, tetapi hanya bisa diakses penonton yang
  * sudah lolos PIN sesi.
  */
 export function viewerEventsPath(sessionId: string): string {

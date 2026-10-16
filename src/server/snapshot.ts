@@ -1,7 +1,7 @@
 /**
  * Cuplikan keadaan sesi untuk kanal realtime.
  *
- * Dipakai saat klien (regu/penonton/moderator) baru tersambung ke aliran SSE,
+ * Dipakai saat klien (regu/penonton/moderator) baru tersambung ke Ably,
  * supaya mereka langsung punya gambaran lengkap: fase soal, urutan jawab,
  * skor semua regu, dan pengaturan waktu — tanpa menunggu peristiwa berikutnya.
  */
@@ -17,11 +17,14 @@ import { listTeams, toTeamDto } from "@/server/team";
 type SnapshotEvent = Extract<SessionEvent, { type: "state.snapshot" }>;
 
 /** Rakit cuplikan keadaan terkini sebuah sesi, atau `null` bila sesi tak ada. */
-export function getSessionSnapshot(sessionId: string): SnapshotEvent | null {
-  const session = getSession(sessionId);
+export async function getSessionSnapshot(sessionId: string): Promise<SnapshotEvent | null> {
+  const session = await getSession(sessionId);
   if (!session) return null;
 
-  const status = getRoundStatus(sessionId);
+  const [status, teams] = await Promise.all([
+    getRoundStatus(sessionId),
+    listTeams(sessionId),
+  ]);
 
   return {
     type: "state.snapshot",
@@ -33,6 +36,6 @@ export function getSessionSnapshot(sessionId: string): SnapshotEvent | null {
     highlight: toHighlightDto(status.winner),
     cooldownSeconds: session.cooldownSeconds,
     serverTime: new Date().toISOString(),
-    teams: listTeams(sessionId).map(toTeamDto),
+    teams: teams.map(toTeamDto),
   };
 }

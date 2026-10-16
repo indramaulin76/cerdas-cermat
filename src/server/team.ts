@@ -37,13 +37,12 @@ export function toTeamDto(row: TeamRow): TeamDto {
 }
 
 /** Daftar regu sebuah sesi, diurutkan sesuai waktu dibuat. */
-export function listTeams(sessionId: string): TeamRow[] {
+export async function listTeams(sessionId: string): Promise<TeamRow[]> {
   return db
     .select()
     .from(teams)
     .where(eq(teams.sessionId, sessionId))
-    .orderBy(asc(teams.createdAt), asc(teams.id))
-    .all();
+    .orderBy(asc(teams.createdAt), asc(teams.id));
 }
 
 type TeamsUpdatedEvent = Extract<SessionEvent, { type: "teams.updated" }>;
@@ -54,15 +53,15 @@ type TeamsUpdatedEvent = Extract<SessionEvent, { type: "teams.updated" }>;
  * Dipakai route tambah/ubah/hapus regu agar dashboard moderator, layar
  * penonton, dan HP regu menerima daftar terbaru tanpa memuat ulang.
  */
-export function toTeamsUpdatedEvent(
+export async function toTeamsUpdatedEvent(
   sessionId: string,
   action: TeamsUpdatedEvent["action"],
-): TeamsUpdatedEvent {
+): Promise<TeamsUpdatedEvent> {
   return {
     type: "teams.updated",
     at: new Date().toISOString(),
     action,
-    teams: listTeams(sessionId).map(toTeamDto),
+    teams: (await listTeams(sessionId)).map(toTeamDto),
   };
 }
 
@@ -78,17 +77,19 @@ function slugifyTeamName(name: string): string {
 }
 
 /** Pastikan id regu unik secara global (id regu adalah kunci utama). */
-function uniqueTeamId(name: string): string {
+async function uniqueTeamId(name: string): Promise<string> {
   const base = slugifyTeamName(name);
-  const taken = (id: string) =>
-    Boolean(
-      db.select({ id: teams.id }).from(teams).where(eq(teams.id, id)).get(),
-    );
+  const taken = async (id: string) =>
+    (await db
+      .select({ id: teams.id })
+      .from(teams)
+      .where(eq(teams.id, id))
+      .limit(1)).length > 0;
 
-  if (!taken(base)) return base;
+  if (!(await taken(base))) return base;
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const candidate = `${base}-${randomUUID().slice(0, 6)}`;
-    if (!taken(candidate)) return candidate;
+    if (!(await taken(candidate))) return candidate;
   }
   return randomUUID();
 }
@@ -159,7 +160,7 @@ export type CreateTeamOutcome =
  * - Jumlah regu dibatasi `MAX_TEAMS`.
  * - Bila warna tidak diberikan, dipilih dari palet yang belum terpakai.
  */
-export function createTeam(input: CreateTeamInput): CreateTeamOutcome {
+export async function createTeam(input: CreateTeamInput): Promise<CreateTeamOutcome> {
   const checked = checkTeamName(input.name);
   if (!checked.ok) {
     return { status: "invalid_name", reason: checked.reason } as const;
@@ -175,22 +176,22 @@ export function createTeam(input: CreateTeamInput): CreateTeamOutcome {
     color = parsed;
   }
 
-  return db.transaction((tx) => {
-    const session = tx
+  return db.transaction(async (tx) => {
+    const [session] = await tx
       .select({ id: sessions.id })
       .from(sessions)
       .where(eq(sessions.id, input.sessionId))
-      .get();
+      .for("update")
+      .limit(1);
 
     if (!session) {
       return { status: "unknown_session", sessionId: input.sessionId } as const;
     }
 
-    const existing = tx
+    const existing = await tx
       .select()
       .from(teams)
-      .where(eq(teams.sessionId, input.sessionId))
-      .all();
+      .where(eq(teams.sessionId, input.sessionId));
 
     if (existing.length >= MAX_TEAMS) {
       return { status: "limit_reached", max: MAX_TEAMS } as const;
@@ -205,7 +206,7 @@ export function createTeam(input: CreateTeamInput): CreateTeamOutcome {
     const now = new Date();
 
     const row: NewTeamRow = {
-      id: uniqueTeamId(name),
+      id: await uniqueTeamId(name),
       sessionId: input.sessionId,
       name,
       color: chosenColor,
@@ -213,16 +214,7 @@ export function createTeam(input: CreateTeamInput): CreateTeamOutcome {
       createdAt: now,
     };
 
-    tx.insert(teams).values(row).run();
-
-    const created: TeamRow = {
-      id: row.id,
-      sessionId: input.sessionId,
-      name,
-      color: chosenColor,
-      score: 0,
-      createdAt: now,
-    };
+    const [created] = await tx.insert(teams).values(row).returning();
 
     return { status: "created", row: created } as const;
   });
@@ -258,7 +250,7 @@ export type UpdateTeamOutcome =
  * - Warna harus hex yang valid.
  * - Skor tidak disentuh oleh fungsi ini.
  */
-export function updateTeam(input: UpdateTeamInput): UpdateTeamOutcome {
+export async function updateTeam(input: UpdateTeamInput): Promise<UpdateTeamOutcome> {
   const providedName = input.name !== undefined && input.name !== null;
   const providedColor =
     input.color !== undefined && input.color !== null && input.color !== "";
@@ -285,14 +277,24 @@ export function updateTeam(input: UpdateTeamInput): UpdateTeamOutcome {
     color = parsed;
   }
 
-  return db.transaction((tx) => {
-    const team = tx
+  return db.transaction(async (tx) => {
+    const [session] = await tx
+      .select({ id: sessions.id })
+      .from(sessions)
+      .where(eq(sessions.id, input.sessionId))
+      .for("update")
+      .limit(1);
+    if (!session) {
+      return { status: "unknown_team", teamId: input.teamId } as const;
+    }
+
+    const [team] = await tx
       .select()
       .from(teams)
       .where(
         and(eq(teams.id, input.teamId), eq(teams.sessionId, input.sessionId)),
       )
-      .get();
+      .limit(1);
 
     if (!team) {
       return { status: "unknown_team", teamId: input.teamId } as const;
@@ -301,12 +303,11 @@ export function updateTeam(input: UpdateTeamInput): UpdateTeamOutcome {
     const patch: Partial<Pick<TeamRow, "name" | "color">> = {};
 
     if (name !== null && name !== team.name) {
-      const others = tx
+      const others = (await tx
         .select()
         .from(teams)
         .where(eq(teams.sessionId, input.sessionId))
-        .all()
-        .filter((t) => t.id !== team.id);
+        ).filter((t) => t.id !== team.id);
 
       const lowered = name.toLowerCase();
       if (others.some((t) => t.name.trim().toLowerCase() === lowered)) {
@@ -324,11 +325,15 @@ export function updateTeam(input: UpdateTeamInput): UpdateTeamOutcome {
       return { status: "updated", row: team } as const;
     }
 
-    tx.update(teams).set(patch).where(eq(teams.id, input.teamId)).run();
+    const [updated] = await tx
+      .update(teams)
+      .set(patch)
+      .where(eq(teams.id, input.teamId))
+      .returning();
 
     return {
       status: "updated",
-      row: { ...team, ...patch } as TeamRow,
+      row: updated,
     } as const;
   });
 }
@@ -358,21 +363,21 @@ export type RemoveTeamOutcome =
  * Menghapus regu ikut menghapus catatan tekanan miliknya (lewat foreign key
  * cascade) tanpa mengganggu regu lain.
  */
-export function removeTeam(input: RemoveTeamInput): RemoveTeamOutcome {
-  return db.transaction((tx) => {
-    const team = tx
+export function removeTeam(input: RemoveTeamInput): Promise<RemoveTeamOutcome> {
+  return db.transaction(async (tx) => {
+    const [team] = await tx
       .select()
       .from(teams)
       .where(
         and(eq(teams.id, input.teamId), eq(teams.sessionId, input.sessionId)),
       )
-      .get();
+      .limit(1);
 
     if (!team) {
       return { status: "unknown_team", teamId: input.teamId } as const;
     }
 
-    const openRound = tx
+    const [openRound] = await tx
       .select({ id: rounds.id })
       .from(rounds)
       .where(
@@ -381,10 +386,11 @@ export function removeTeam(input: RemoveTeamInput): RemoveTeamOutcome {
           eq(rounds.status, "open"),
         ),
       )
-      .get();
+      .for("update")
+      .limit(1);
 
     if (openRound) {
-      const activeBuzz = tx
+      const [activeBuzz] = await tx
         .select({ id: buzzEvents.id })
         .from(buzzEvents)
         .where(
@@ -393,85 +399,15 @@ export function removeTeam(input: RemoveTeamInput): RemoveTeamOutcome {
             eq(buzzEvents.teamId, input.teamId),
           ),
         )
-        .get();
+        .limit(1);
 
       if (activeBuzz) {
         return { status: "team_active", roundId: openRound.id } as const;
       }
     }
 
-    tx.delete(teams).where(eq(teams.id, input.teamId)).run();
+    await tx.delete(teams).where(eq(teams.id, input.teamId));
 
     return { status: "deleted", row: team } as const;
-  });
-}
-
-/** Masukan pembaruan skor internal yang tidak lagi digunakan oleh API live. */
-export type UpdateScoreInput = {
-  sessionId: string;
-  teamId: string;
-  delta?: number;
-  outcome?: "correct" | "wrong";
-};
-
-export type UpdateScoreOutcome =
-  | { status: "updated"; row: TeamRow; delta: number }
-  | { status: "unknown_team"; teamId: string }
-  | { status: "unknown_session"; sessionId: string }
-  | { status: "invalid" };
-
-/**
- * Tambah/kurang poin sebuah regu.
- *
- * Bila `delta` diberikan, itulah yang diterapkan. Bila `outcome` diberikan,
- * poin diambil dari aturan sesi (`correct_points` / `wrong_points`).
- * Skor boleh menjadi negatif.
- */
-export function updateTeamScore(input: UpdateScoreInput): UpdateScoreOutcome {
-  const { sessionId, teamId } = input;
-
-  return db.transaction((tx) => {
-    const session = tx
-      .select({
-        correctPoints: sessions.correctPoints,
-        wrongPoints: sessions.wrongPoints,
-      })
-      .from(sessions)
-      .where(eq(sessions.id, sessionId))
-      .get();
-
-    if (!session) {
-      return { status: "unknown_session", sessionId } as const;
-    }
-
-    let delta: number;
-    if (typeof input.delta === "number" && Number.isFinite(input.delta)) {
-      delta = Math.round(input.delta);
-    } else if (input.outcome === "correct") {
-      delta = session.correctPoints;
-    } else if (input.outcome === "wrong") {
-      delta = session.wrongPoints;
-    } else {
-      return { status: "invalid" } as const;
-    }
-
-    const team = tx
-      .select()
-      .from(teams)
-      .where(and(eq(teams.id, teamId), eq(teams.sessionId, sessionId)))
-      .get();
-
-    if (!team) {
-      return { status: "unknown_team", teamId } as const;
-    }
-
-    const nextScore = team.score + delta;
-    tx.update(teams).set({ score: nextScore }).where(eq(teams.id, teamId)).run();
-
-    return {
-      status: "updated",
-      row: { ...team, score: nextScore },
-      delta,
-    } as const;
   });
 }

@@ -32,26 +32,26 @@ export type TeamStatusOutcome = {
   teamId: string;
 };
 
-export function getTeamStatus(input: TeamStatusInput): TeamStatusOutcome {
+export function getTeamStatus(input: TeamStatusInput): Promise<TeamStatusOutcome> {
   const { sessionId, teamId } = input;
 
-  return db.transaction((tx) => {
-    const team = tx
+  return db.transaction(async (tx) => {
+    const [team] = await tx
       .select({ id: teams.id })
       .from(teams)
       .where(and(eq(teams.id, teamId), eq(teams.sessionId, sessionId)))
-      .get();
+      .limit(1);
 
     if (!team) {
       return { status: "unknown_team", teamId } as const;
     }
 
-    const round = tx
+    const [round] = await tx
       .select()
       .from(rounds)
       .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
       .orderBy(rounds.orderNumber)
-      .get();
+      .limit(1);
 
     const roundId = round?.id ?? null;
     const scope = and(
@@ -61,7 +61,7 @@ export function getTeamStatus(input: TeamStatusInput): TeamStatusOutcome {
 
     // Pakai urutan yang sama dengan papan skor moderator (seri ditangani
     // lewat reactionMs + waktu tiba).
-    const ranked = rankBuzzes(tx.select().from(buzzEvents).where(scope).all());
+    const ranked = rankBuzzes(await tx.select().from(buzzEvents).where(scope));
 
     const idx = ranked.findIndex((e) => e.teamId === teamId);
     if (idx >= 0) {

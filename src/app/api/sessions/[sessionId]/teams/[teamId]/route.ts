@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_color", "Warna harus berupa teks hex.", 400);
   }
 
-  const outcome = updateTeam({ sessionId, teamId, name, color });
+  const outcome = await updateTeam({ sessionId, teamId, name, color });
 
   if (outcome.status === "unknown_team") {
     return errorResponse(
@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   };
 
   // Sinkronkan daftar regu ke semua dashboard.
-  publish(sessionId, toTeamsUpdatedEvent(sessionId, "updated"));
+  await publish(sessionId, await toTeamsUpdatedEvent(sessionId, "updated"));
 
   return NextResponse.json(response);
 }
@@ -148,7 +148,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     return errorResponse(gate.error, gate.message, gate.status);
   }
 
-  const outcome = removeTeam({ sessionId, teamId });
+  const outcome = await removeTeam({ sessionId, teamId });
 
   if (outcome.status === "unknown_team") {
     return errorResponse(
@@ -172,7 +172,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   };
 
   // Sinkronkan daftar regu ke semua dashboard.
-  publish(sessionId, toTeamsUpdatedEvent(sessionId, "deleted"));
+  await publish(sessionId, await toTeamsUpdatedEvent(sessionId, "deleted"));
 
   return NextResponse.json(response);
 }

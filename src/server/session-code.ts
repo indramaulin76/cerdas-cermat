@@ -59,14 +59,13 @@ export function slugify(input: string): string {
 }
 
 /** Apakah sebuah id sesi sudah dipakai. */
-export function sessionIdExists(id: string): boolean {
-  return Boolean(
-    db
+export async function sessionIdExists(id: string): Promise<boolean> {
+  const rows = await db
       .select({ id: sessions.id })
       .from(sessions)
       .where(eq(sessions.id, id))
-      .get(),
-  );
+      .limit(1);
+  return rows.length > 0;
 }
 
 /**
@@ -75,13 +74,13 @@ export function sessionIdExists(id: string): boolean {
  * Bagian judul membantu admin mengenali sesi, sedangkan akhiran acak menjamin
  * keunikan. Bila bentrok (sangat jarang), coba lagi dengan akhiran baru.
  */
-export function generateSessionId(title?: string): string {
+export async function generateSessionId(title?: string): Promise<string> {
   const base = title ? slugify(title) : "";
 
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const suffix = randomBytes(3).toString("hex"); // 6 karakter
     const id = base ? `${base}-${suffix}` : `sesi-${suffix}`;
-    if (!sessionIdExists(id)) return id;
+    if (!(await sessionIdExists(id))) return id;
   }
 
   // Cadangan: id acak panjang, praktis tak mungkin bentrok.

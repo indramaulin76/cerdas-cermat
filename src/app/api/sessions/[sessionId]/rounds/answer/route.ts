@@ -19,16 +19,16 @@ function errorResponse(error: string, message: string, status: number) {
   return NextResponse.json<ApiErrorResponse>({ ok: false, error, message }, { status });
 }
 
-function publishCurrentRound(sessionId: string) {
-  const event = getRoundStateEvent(sessionId);
-  if (event) publish(sessionId, event);
+async function publishCurrentRound(sessionId: string) {
+  const event = await getRoundStateEvent(sessionId);
+  if (event) await publish(sessionId, event);
   else {
-    publish(sessionId, {
+    await publish(sessionId, {
       type: "round.reset",
       at: new Date().toISOString(),
       roundId: null,
     });
-    publish(sessionId, {
+    await publish(sessionId, {
       type: "highlight.updated",
       at: new Date().toISOString(),
       highlight: { teamId: null, event: null },
@@ -75,16 +75,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (typeof input.teamId !== "string" || !input.teamId.trim()) {
       return errorResponse("invalid_team", "Pilih regu yang sudah menekan tombol buzz.", 400);
     }
-    const result = selectAnsweringTeam(sessionId, input.teamId);
+    const result = await selectAnsweringTeam(sessionId, input.teamId);
     if (result.status !== "selected") return failureFor(result.status);
-    publishCurrentRound(sessionId);
+    await publishCurrentRound(sessionId);
     return NextResponse.json({ ok: true, round: toRoundDto(result.round) });
   }
 
   if (action === "next") {
-    const result = advanceToNextTeam(sessionId);
+    const result = await advanceToNextTeam(sessionId);
     if (result.status !== "advanced") return failureFor(result.status);
-    publishCurrentRound(sessionId);
+    await publishCurrentRound(sessionId);
     return NextResponse.json({ ok: true, round: toRoundDto(result.round) });
   }
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     ) {
       return errorResponse("invalid_penalty", "Pilih pengurangan 50, 75, atau 100 poin.", 400);
     }
-    const result = recordAnswerResult(
+    const result = await recordAnswerResult(
       sessionId,
       action,
       action === "wrong" ? input.penalty as number : undefined,
@@ -104,13 +104,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (result.status !== "recorded") return failureFor(result.status);
 
     const team = toTeamDto(result.team);
-    publish(sessionId, {
+    await publish(sessionId, {
       type: "score.updated",
       at: new Date().toISOString(),
       team,
       delta: result.delta,
     });
-    publishCurrentRound(sessionId);
+    await publishCurrentRound(sessionId);
     return NextResponse.json({
       ok: true,
       round: toRoundDto(result.round),

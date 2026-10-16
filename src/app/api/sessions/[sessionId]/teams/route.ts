@@ -49,7 +49,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
   const response: TeamsResponse = {
     ok: true,
-    teams: listTeams(sessionId).map(toTeamDto),
+    teams: (await listTeams(sessionId)).map(toTeamDto),
   };
   return NextResponse.json(response);
 }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_color", "Warna harus berupa teks hex.", 400);
   }
 
-  const outcome = createTeam({ sessionId, name, color });
+  const outcome = await createTeam({ sessionId, name, color });
 
   if (outcome.status === "unknown_session") {
     return errorResponse(
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   };
 
   // Sinkronkan daftar regu ke semua dashboard (moderator, penonton, HP regu).
-  publish(sessionId, toTeamsUpdatedEvent(sessionId, "created"));
+  await publish(sessionId, await toTeamsUpdatedEvent(sessionId, "created"));
 
   return NextResponse.json(response, { status: 201 });
 }

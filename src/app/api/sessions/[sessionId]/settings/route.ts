@@ -25,7 +25,7 @@ function errorResponse(error: string, message: string, status: number) {
  * Body: `{ cooldownSeconds? }`
  *
  * Boleh diakses panitia yang sudah masuk atau moderator sesi. Perubahan
- * disiarkan lewat SSE (`session.updated`) supaya aba-aba regu dan papan skor
+ * disiarkan lewat Ably (`session.updated`) supaya aba-aba regu dan papan skor
  * ikut menyesuaikan.
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_field", "cooldownSeconds wajib berupa angka.", 400);
   }
 
-  const result = updateSessionSettings({ sessionId, cooldownSeconds });
+  const result = await updateSessionSettings({ sessionId, cooldownSeconds });
 
   if (result.status === "unknown_session") {
     return errorResponse(
@@ -77,7 +77,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const session = toSessionDto(result.row);
 
-  publish(sessionId, {
+  await publish(sessionId, {
     type: "session.updated",
     at: new Date().toISOString(),
     session,

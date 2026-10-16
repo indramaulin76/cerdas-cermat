@@ -16,7 +16,7 @@ import { requireModerator, requireTeam } from "@/server/auth";
  * Body: `{ teamId, roundId?, reactionMs }`
  *
  * Menandai tekanan pertama sebagai regu tercepat dan mencegah tekanan dobel
- * dari regu yang sama. Berjalan di runtime Node (bawaan) karena memakai SQLite.
+ * dari regu yang sama. Berjalan di runtime Node (bawaan).
  *
  * `GET /api/sessions/[sessionId]/buzz?roundId=...`
  *
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!gate.ok) return errorResponse(gate.error, gate.message, gate.status);
 
   const roundId = request.nextUrl.searchParams.get("roundId");
-  const order = getBuzzOrder({ sessionId, roundId });
+  const order = await getBuzzOrder({ sessionId, roundId });
 
   const response: BuzzOrderResponse = {
     ok: true,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  const outcome = recordBuzz({
+  const outcome = await recordBuzz({
     sessionId,
     teamId: teamId.trim(),
     roundId,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // disiarkan ulang agar urutan tidak bergetar.
   if (!outcome.duplicate) {
     const ranking = outcome.ranking.map(toBuzzEventDto);
-    publish(sessionId, {
+    await publish(sessionId, {
       type: "buzz.recorded",
       at: new Date().toISOString(),
       order: outcome.order,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     // Sorotan regu tercepat untuk layar penonton: regu paling atas urutan.
-    publish(sessionId, {
+    await publish(sessionId, {
       type: "highlight.updated",
       at: new Date().toISOString(),
       highlight: toHighlightDto(outcome.ranking[0] ?? null),

@@ -36,7 +36,10 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return errorResponse(gate.error, gate.message, gate.status);
   }
 
-  const session = getSession(sessionId);
+  const [session, teams] = await Promise.all([
+    getSession(sessionId),
+    listTeams(sessionId),
+  ]);
   if (!session) {
     return errorResponse(
       "unknown_session",
@@ -48,7 +51,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   const response: ViewerDataResponse = {
     ok: true,
     session: toSessionDto(session),
-    teams: listTeams(sessionId).map(toTeamDto),
+    teams: teams.map(toTeamDto),
   };
   return NextResponse.json(response);
 }
