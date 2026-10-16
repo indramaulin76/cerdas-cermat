@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 
 import type { SessionEvent } from "@/lib/ccl/api";
 import { subscribe } from "@/server/events";
+import { getSessionSnapshot } from "@/server/snapshot";
 
 type RouteParams = { params: Promise<{ sessionId: string }> };
 
@@ -22,7 +23,9 @@ function encodeEvent(event: SessionEvent): Uint8Array {
  * `GET /api/sessions/[sessionId]/events`
  *
  * Dashboard regu, moderator, dan layar penonton menyambung ke sini untuk
- * menerima pembukaan soal dan tekanan tombol tanpa jeda yang terasa.
+ * menerima pembukaan soal, tekanan tombol, perubahan skor, dan pengaturan.
+ * Saat tersambung, klien langsung menerima `state.snapshot` berisi keadaan
+ * terkini supaya yang bergabung di tengah lomba tidak tertinggal.
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { sessionId } = await params;
@@ -40,10 +43,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
       };
 
-      // Perkenalan: segera kirim ping agar klien tahu koneksi hidup.
-      send({ type: "ping", at: new Date().toISOString() });
-
+      // Berlangganan lebih dulu, lalu kirim cuplikan keadaan — semuanya dalam
+      // satu tick sinkron, jadi tidak ada peristiwa yang terlewat di antaranya.
       const unsubscribe = subscribe(sessionId, send);
+
+      const snapshot = getSessionSnapshot(sessionId);
+      if (snapshot) send(snapshot);
+
+      // Denyut awal agar klien tahu koneksi hidup.
+      send({ type: "ping", at: new Date().toISOString() });
 
       const heartbeat = setInterval(() => {
         send({ type: "ping", at: new Date().toISOString() });

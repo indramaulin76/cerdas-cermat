@@ -120,6 +120,21 @@ export type SessionEvent =
   | { type: "score.updated"; at: string; team: TeamDto; delta: number }
   /** Pengaturan sesi (cooldown/poin) berubah. */
   | { type: "session.updated"; at: string; session: SessionDto }
+  /**
+   * Cuplikan keadaan terkini, dikirim sekali saat klien baru tersambung supaya
+   * regu/penonton yang bergabung di tengah lomba langsung sinkron.
+   */
+  | {
+      type: "state.snapshot";
+      at: string;
+      session: SessionDto;
+      phase: QuestionPhase;
+      round: RoundDto | null;
+      ranking: BuzzEventDto[];
+      cooldownSeconds: number;
+      serverTime: string;
+      teams: TeamDto[];
+    }
   /** Denyut koneksi agar aliran tidak diputus oleh proxy. */
   | { type: "ping"; at: string };
 
