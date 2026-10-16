@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "931d77afeccb35aad0c8a138ff15e64d83975d0e",
+  "generatedForCommit": "e4afcf9614aef5ab76825948e8863ac39d8ff6e9",
   "files": [
     {
       "path": ".gitignore",
@@ -258,7 +258,7 @@
       "path": "src/components/admin/team-manager.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 7924
+      "size": 10882
     },
     {
       "path": "src/components/moderator/moderator-dashboard.tsx",
@@ -355,6 +355,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 9015
+    },
+    {
+      "path": "src/lib/ccl/team-colors.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1005
     },
     {
       "path": "src/lib/ccl/theme.ts",

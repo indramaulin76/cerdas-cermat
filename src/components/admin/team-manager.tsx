@@ -117,6 +117,10 @@ export function TeamManager({
   }, []);
 
   const duplicateNames = findDuplicateNames(teams);
+  const hasNameError = teams.some(
+    (team) => teamNameError(team, duplicateNames) !== null,
+  );
+  const namedTeams = teams.filter((team) => team.name.trim().length > 0);
 
   return (
     <main className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
@@ -128,24 +132,61 @@ export function TeamManager({
         <div className="absolute inset-0 bg-[radial-gradient(120%_110%_at_50%_-20%,color-mix(in_oklch,var(--color-primary)_16%,transparent),transparent_60%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8">
+      <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8 lg:max-w-4xl">
         <header className="space-y-2">
           <Badge variant="outline" className="text-muted-foreground">
             Fase 2 · data tiruan
           </Badge>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
-              Kelola Regu
-            </h1>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium tabular-nums">
-              {teams.length} / {maxTeams} regu
-            </span>
-          </div>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+            Kelola Regu
+          </h1>
           <p className="text-sm text-muted-foreground">
             Atur jumlah, nama, dan warna regu peserta (maksimal {maxTeams}{" "}
             regu) sebelum lomba dimulai.
           </p>
         </header>
+
+        {/* Ringkasan regu: jumlah dan identitas warna tiap regu. */}
+        <section
+          aria-label="Ringkasan regu"
+          className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur sm:p-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xl font-black sm:text-2xl">
+              {teams.length} regu peserta
+            </p>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-muted-foreground tabular-nums">
+              maksimal {maxTeams}
+            </span>
+          </div>
+
+          {namedTeams.length > 0 ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {namedTeams.map((team) => (
+                <li
+                  key={team.id}
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 py-1 pr-3 pl-1.5 text-sm"
+                >
+                  <span
+                    className="size-3.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: team.color }}
+                    aria-hidden
+                  />
+                  <span className="max-w-40 truncate font-medium">
+                    {team.name.trim()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {hasNameError ? (
+            <p className="mt-3 text-sm text-destructive" role="status">
+              Ada nama regu yang kosong atau sama. Perbaiki dulu sebelum
+              menyimpan.
+            </p>
+          ) : null}
+        </section>
 
         {teams.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 px-5 py-10 text-center">
