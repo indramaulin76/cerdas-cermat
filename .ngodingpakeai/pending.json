@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "012afdf624bcaf4e6cdbe8068339794b974f16f5",
+  "generatedForCommit": "f08fdd719fb66924062d3d31573f65943c38b185",
   "files": [
     {
       "path": ".gitignore",
@@ -238,9 +238,9 @@
     },
     {
       "path": "src/app/penonton/page.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 691
+      "size": 746
     },
     {
       "path": "src/app/regu/page.tsx",
@@ -291,10 +291,28 @@
       "size": 3375
     },
     {
-      "path": "src/components/viewer/viewer-screen.tsx",
+      "path": "src/components/viewer/viewer-app.tsx",
       "reason": "new",
       "language": "typescript",
-      "size": 4905
+      "size": 2095
+    },
+    {
+      "path": "src/components/viewer/viewer-pin-gate.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 4628
+    },
+    {
+      "path": "src/components/viewer/viewer-scoreboard.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3069
+    },
+    {
+      "path": "src/components/viewer/viewer-screen.tsx",
+      "reason": "changed",
+      "language": "typescript",
+      "size": 2823
     },
     {
       "path": "src/db/index.ts",
@@ -328,9 +346,9 @@
     },
     {
       "path": "src/lib/mock/session.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 1732
+      "size": 2016
     },
     {
       "path": "src/lib/utils.ts",

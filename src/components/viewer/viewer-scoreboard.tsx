@@ -7,9 +7,9 @@ import { cn } from "cn";
  * Papan skor besar untuk layar penonton.
  *
  * Menampilkan semua regu (maks. 10 sesuai PRD) dengan nama dan skor berukuran
- * besar agar terbaca dari jauh. Regu diurutkan dari skor tertinggi. Komponen ini
- * murni menampilkan data; pembaruan realtime dan sorotan regu tercepat
- * ditambahkan pada tugas berikutnya.
+ * besar agar terbaca dari jauh. Regu diurutkan dari skor tertinggi. Bila ada
+ * `highlightTeamId` (regu yang menekan tombol jawab paling dulu), kartu regu
+ * itu disorot dengan tanda khusus dan animasi yang mencuri perhatian.
  */
 
 /** Warna medali untuk tiga peringkat teratas. */
@@ -25,7 +25,14 @@ function teamInitial(name: string): string {
   return (cleaned.charAt(0) || "?").toUpperCase();
 }
 
-export function ViewerScoreboard({ teams }: { teams: Team[] }) {
+export function ViewerScoreboard({
+  teams,
+  highlightTeamId = null,
+}: {
+  teams: Team[];
+  /** Id regu tercepat yang sedang disorot (opsional). */
+  highlightTeamId?: string | null;
+}) {
   const standings = [...teams].sort((a, b) => b.score - a.score);
   const leaderScore = standings[0]?.score ?? 0;
 
@@ -34,6 +41,7 @@ export function ViewerScoreboard({ teams }: { teams: Team[] }) {
       {standings.map((team, index) => {
         const rank = index + 1;
         const isLeader = rank === 1 && leaderScore > 0;
+        const isFastest = team.id === highlightTeamId;
 
         return (
           <li
@@ -41,6 +49,7 @@ export function ViewerScoreboard({ teams }: { teams: Team[] }) {
             className={cn(
               "relative flex items-center gap-4 overflow-hidden rounded-3xl border border-border/60 bg-card/70 p-5 backdrop-blur sm:gap-6 sm:p-6",
               isLeader && "border-amber-400/60",
+              isFastest && "z-10 animate-ccl-highlight border-transparent",
             )}
             style={{
               boxShadow: `inset 0 0 0 1px color-mix(in oklch, ${team.color} 45%, transparent)`,
@@ -52,9 +61,20 @@ export function ViewerScoreboard({ teams }: { teams: Team[] }) {
               style={{ backgroundColor: team.color }}
             />
 
+            {/* Cahaya berdenyut untuk regu tercepat. */}
+            {isFastest ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 animate-ccl-glow rounded-3xl"
+                style={{
+                  boxShadow: `inset 0 0 0 4px ${team.color}, inset 0 0 42px 6px color-mix(in oklch, ${team.color} 65%, transparent)`,
+                }}
+              />
+            ) : null}
+
             <span
               className={cn(
-                "w-8 shrink-0 text-center text-2xl font-black tabular-nums sm:text-3xl",
+                "relative w-8 shrink-0 text-center text-2xl font-black tabular-nums sm:text-3xl",
                 RANK_ACCENT[rank] ?? "text-muted-foreground/70",
               )}
             >
@@ -62,18 +82,23 @@ export function ViewerScoreboard({ teams }: { teams: Team[] }) {
             </span>
 
             <span
-              className="flex size-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black text-white sm:size-16 sm:text-3xl"
+              className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black text-white sm:size-16 sm:text-3xl"
               style={{ backgroundColor: team.color }}
               aria-hidden
             >
               {teamInitial(team.name)}
             </span>
 
-            <div className="min-w-0 flex-1">
+            <div className="relative min-w-0 flex-1">
               <p className="truncate text-xl font-black tracking-tight sm:text-2xl">
                 {team.name}
               </p>
-              {isLeader ? (
+              {isFastest ? (
+                <p className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-amber-300 uppercase">
+                  <span className="size-1.5 animate-pulse rounded-full bg-amber-300" />
+                  Tercepat
+                </p>
+              ) : isLeader ? (
                 <p className="text-xs font-semibold tracking-wide text-amber-400 uppercase">
                   Unggul
                 </p>
@@ -82,7 +107,7 @@ export function ViewerScoreboard({ teams }: { teams: Team[] }) {
               )}
             </div>
 
-            <span className="shrink-0 text-5xl leading-none font-black tabular-nums sm:text-6xl">
+            <span className="relative shrink-0 text-5xl leading-none font-black tabular-nums sm:text-6xl">
               {team.score}
             </span>
           </li>
