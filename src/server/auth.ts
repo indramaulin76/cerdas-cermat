@@ -125,3 +125,78 @@ export async function requireModerator(
     message: "PIN moderator diperlukan untuk aksi ini.",
   };
 }
+
+/* ------------------------------ Layar Penonton ------------------------------ */
+
+/** Umur cookie penonton: 12 jam (cukup untuk satu acara). */
+export const VIEWER_COOKIE_MAX_AGE = 60 * 60 * 12;
+
+/** Nama cookie penonton untuk sebuah sesi. */
+export function viewerCookieName(sessionId: string): string {
+  return `ccl_viewer_${sessionId}`;
+}
+
+/** Buat token bertanda tangan untuk penonton sebuah sesi. */
+export function createViewerToken(sessionId: string): string {
+  return sign(`viewer:${sessionId}`);
+}
+
+/** Verifikasi token penonton sebuah sesi. */
+export function verifyViewerToken(sessionId: string, token: string): boolean {
+  return safeEqual(token, createViewerToken(sessionId));
+}
+
+/** Cocokkan PIN layar penonton dengan yang tersimpan pada sesi. */
+export function verifyViewerPin(sessionId: string, pin: string): PinCheck {
+  const row = db
+    .select({ pin: sessions.viewerPin })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .get();
+
+  if (!row) return "no_session";
+  if (!row.pin) return "no_pin";
+  return safeEqual(pin, row.pin) ? "ok" : "wrong";
+}
+
+/** Apakah permintaan saat ini sudah terautentikasi sebagai penonton. */
+export async function isViewerAuthenticated(
+  sessionId: string,
+): Promise<boolean> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(viewerCookieName(sessionId))?.value;
+  return Boolean(token && verifyViewerToken(sessionId, token));
+}
+
+/**
+ * Gerbang untuk aksi/data khusus layar penonton.
+ *
+ * Sesi tanpa PIN → dibuka (mode dev). Sesi ber-PIN → wajib cookie penonton.
+ */
+export async function requireViewer(sessionId: string): Promise<ModeratorGate> {
+  const row = db
+    .select({ pin: sessions.viewerPin })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .get();
+
+  if (!row) {
+    return {
+      ok: false,
+      status: 404,
+      error: "unknown_session",
+      message: `Sesi "${sessionId}" tidak ditemukan.`,
+    };
+  }
+
+  if (!row.pin) return { ok: true };
+
+  if (await isViewerAuthenticated(sessionId)) return { ok: true };
+
+  return {
+    ok: false,
+    status: 401,
+    error: "unauthorized",
+    message: "PIN layar penonton diperlukan untuk aksi ini.",
+  };
+}

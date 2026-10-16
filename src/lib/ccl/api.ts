@@ -165,6 +165,23 @@ export function moderatorAuthPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/auth/moderator`;
 }
 
+/** Permintaan masuk sebagai penonton memakai PIN. */
+export type ViewerAuthRequest = {
+  pin: string;
+};
+
+/** Balasan endpoint auth layar penonton. */
+export type ViewerAuthResponse = {
+  ok: true;
+  /** `true` bila permintaan ini terautentikasi sebagai penonton. */
+  authenticated: boolean;
+};
+
+/** Endpoint autentikasi PIN layar penonton sebuah sesi. */
+export function viewerAuthPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/auth/viewer`;
+}
+
 /** Fase soal yang sedang berjalan. */
 export type QuestionPhase =
   /** Belum ada soal yang dibuka. */
