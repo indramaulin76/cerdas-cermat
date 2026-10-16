@@ -18,13 +18,33 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
+/** Sesi lomba (`sessions`) — minimal, untuk mendukung relasi. */
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull().default("Cerdas Cermat Live"),
+  cooldownSeconds: integer("cooldown_seconds").notNull().default(10),
+  correctPoints: integer("correct_points").notNull().default(100),
+  wrongPoints: integer("wrong_points").notNull().default(-50),
+  status: text("status", { enum: ["draft", "active", "finished"] })
+    .notNull()
+    .default("draft"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
 /** Regu peserta lomba (`teams`). */
 export const teams = sqliteTable(
   "teams",
   {
     id: text("id").primaryKey(),
     /** Relasi ke sesi lomba (`sessions.id`). */
-    sessionId: text("session_id").notNull(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
     /** Nama regu yang tampil di layar, mis. "Regu Elang". */
     name: text("name").notNull(),
     /** Warna identitas regu (hex) untuk aksen tombol & papan skor. */
@@ -43,6 +63,27 @@ export const teams = sqliteTable(
   ],
 );
 
+/** Soal/ronde (`rounds`). */
+export const rounds = sqliteTable(
+  "rounds",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
+    orderNumber: integer("order_number").notNull().default(0),
+    status: text("status", { enum: ["draft", "open", "closed"] })
+      .notNull()
+      .default("draft"),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    endedAt: integer("ended_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (table) => [index("rounds_session_id_idx").on(table.sessionId)],
+);
+
 /** Catatan tekanan tombol jawab (`buzz_events`). */
 export const buzzEvents = sqliteTable(
   "buzz_events",
@@ -55,7 +96,9 @@ export const buzzEvents = sqliteTable(
       .notNull()
       .references(() => teams.id, { onDelete: "cascade" }),
     /** Relasi ke soal/ronde (`rounds.id`), boleh kosong bila ronde belum ada. */
-    roundId: text("round_id"),
+    roundId: text("round_id").references(() => rounds.id, {
+      onDelete: "set null",
+    }),
     /** Kecepatan reaksi sejak soal dibuka (milidetik). */
     reactionMs: integer("reaction_ms").notNull(),
     /** Penanda regu tercepat pada ronde ini. */
@@ -80,6 +123,16 @@ export const buzzEvents = sqliteTable(
 export type TeamRow = typeof teams.$inferSelect;
 /** Bentuk baris baru tabel `teams`. */
 export type NewTeamRow = typeof teams.$inferInsert;
+
+/** Bentuk baris tabel `rounds`. */
+export type RoundRow = typeof rounds.$inferSelect;
+/** Bentuk baris baru tabel `rounds`. */
+export type NewRoundRow = typeof rounds.$inferInsert;
+
+/** Bentuk baris tabel `sessions`. */
+export type SessionRow = typeof sessions.$inferSelect;
+/** Bentuk baris baru tabel `sessions`. */
+export type NewSessionRow = typeof sessions.$inferInsert;
 
 /** Bentuk baris tabel `buzz_events`. */
 export type BuzzEventRow = typeof buzzEvents.$inferSelect;
