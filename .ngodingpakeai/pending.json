@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "fa9fa2aa2014171eaeee684d88893146c6917f2f",
+  "generatedForCommit": "012afdf624bcaf4e6cdbe8068339794b974f16f5",
   "files": [
     {
       "path": ".gitignore",
@@ -166,19 +166,19 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/events/route.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2493
     },
     {
       "path": "src/app/api/sessions/[sessionId]/round/status/route.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1375
     },
     {
       "path": "src/app/api/sessions/[sessionId]/rounds/open/route.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1708
     },
@@ -190,7 +190,7 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/settings/route.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2583
     },
@@ -235,6 +235,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 1713
+    },
+    {
+      "path": "src/app/penonton/page.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 691
     },
     {
       "path": "src/app/regu/page.tsx",
@@ -285,6 +291,12 @@
       "size": 3375
     },
     {
+      "path": "src/components/viewer/viewer-screen.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 4905
+    },
+    {
       "path": "src/db/index.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -304,7 +316,7 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 9015
     },
@@ -352,13 +364,13 @@
     },
     {
       "path": "src/server/session.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3207
     },
     {
       "path": "src/server/snapshot.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1328
     },
