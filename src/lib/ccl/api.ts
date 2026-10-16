@@ -318,3 +318,20 @@ export type UpdateSettingsResponse = {
 export function settingsPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/settings`;
 }
+
+/** Data yang dibutuhkan layar penonton: pengaturan sesi + semua regu. */
+export type ViewerDataResponse = {
+  ok: true;
+  session: SessionDto;
+  teams: TeamDto[];
+};
+
+/**
+ * Endpoint data sesi & regu untuk layar penonton.
+ *
+ * Dipakai layar penonton untuk memuat gambaran awal sebelum aliran realtime
+ * (SSE) tersambung.
+ */
+export function viewerDataPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/viewer`;
+}

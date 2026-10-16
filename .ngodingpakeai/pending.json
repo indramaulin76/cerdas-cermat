@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "91ba87d6c181038acb7e61f2d70417860ec239b9",
+  "generatedForCommit": "ccbaade561d15b457792ac2cec0f9615fa74ba58",
   "files": [
     {
       "path": ".gitignore",
@@ -159,6 +159,12 @@
       "size": 3032
     },
     {
+      "path": "src/app/api/sessions/[sessionId]/auth/viewer/route.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2994
+    },
+    {
       "path": "src/app/api/sessions/[sessionId]/buzz/route.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -256,7 +262,7 @@
     },
     {
       "path": "src/components/admin/team-manager.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 12421
     },
@@ -352,9 +358,9 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 9015
+      "size": 9507
     },
     {
       "path": "src/lib/ccl/team-colors.ts",
@@ -388,9 +394,9 @@
     },
     {
       "path": "src/server/auth.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 3680
+      "size": 5868
     },
     {
       "path": "src/server/buzz.ts",
