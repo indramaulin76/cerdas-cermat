@@ -9,7 +9,7 @@
 import "server-only";
 
 import type { SessionEvent } from "@/lib/ccl/api";
-import { toBuzzEventDto } from "@/server/buzz";
+import { toBuzzEventDto, toHighlightDto } from "@/server/buzz";
 import { getRoundStatus, toRoundDto } from "@/server/round";
 import { getSession, toSessionDto } from "@/server/session";
 import { listTeams, toTeamDto } from "@/server/team";
@@ -30,6 +30,7 @@ export function getSessionSnapshot(sessionId: string): SnapshotEvent | null {
     phase: status.phase,
     round: status.round ? toRoundDto(status.round) : null,
     ranking: status.ranking.map(toBuzzEventDto),
+    highlight: toHighlightDto(status.winner),
     cooldownSeconds: session.cooldownSeconds,
     serverTime: new Date().toISOString(),
     teams: listTeams(sessionId).map(toTeamDto),

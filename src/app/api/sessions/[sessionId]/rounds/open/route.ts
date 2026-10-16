@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import type { OpenRoundResponse, ApiErrorResponse } from "@/lib/ccl/api";
 import { requireModerator } from "@/server/auth";
+import { toHighlightDto } from "@/server/buzz";
 import { publish } from "@/server/events";
 import { openRound, toRoundDto } from "@/server/round";
 import { getSession } from "@/server/session";
@@ -47,6 +48,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     round,
     armAt,
     cooldownSeconds,
+  });
+
+  // Soal baru: sorotan regu tercepat dari soal sebelumnya dibersihkan.
+  publish(sessionId, {
+    type: "highlight.updated",
+    at: new Date().toISOString(),
+    highlight: toHighlightDto(null),
   });
 
   return NextResponse.json(response, { status: 201 });

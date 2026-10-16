@@ -23,7 +23,7 @@ import {
   teams,
   type BuzzEventRow,
 } from "@/db/schema";
-import type { BuzzEventDto } from "@/lib/ccl/api";
+import type { BuzzEventDto, HighlightDto } from "@/lib/ccl/api";
 
 /**
  * Selisih reaksi (ms) yang dianggap "hampir bersamaan".
@@ -193,6 +193,19 @@ export function toBuzzEventDto(row: BuzzEventRow): BuzzEventDto {
     reactionMs: row.reactionMs,
     isFirst: row.isFirst,
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/**
+ * Bentuk sorotan regu tercepat untuk layar penonton.
+ *
+ * `null` (tanpa tekanan) menghasilkan sorotan kosong, dipakai saat soal baru
+ * dibuka atau diulang supaya sorotan lama langsung hilang.
+ */
+export function toHighlightDto(row: BuzzEventRow | null): HighlightDto {
+  return {
+    teamId: row?.teamId ?? null,
+    event: row ? toBuzzEventDto(row) : null,
   };
 }
 

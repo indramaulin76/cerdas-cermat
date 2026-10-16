@@ -52,6 +52,18 @@ export type ApiErrorResponse = {
   message?: string;
 };
 
+/**
+ * Sorotan regu tercepat di layar penonton.
+ *
+ * `teamId` berisi regu yang sedang disorot, atau `null` bila tidak ada sorotan
+ * (mis. sebelum soal dibuka atau setelah soal baru diulang). `event` membawa
+ * data tekanan tercepat untuk keperluan animasi.
+ */
+export type HighlightDto = {
+  teamId: string | null;
+  event: BuzzEventDto | null;
+};
+
 /** Format balasan endpoint catat tekanan, sukses maupun gagal. */
 export type BuzzApiResponse = RecordBuzzResponse | ApiErrorResponse;
 
@@ -118,6 +130,11 @@ export type SessionEvent =
   | { type: "round.reset"; at: string; roundId: string | null }
   /** Skor sebuah regu berubah: papan skor & penonton ikut diperbarui. */
   | { type: "score.updated"; at: string; team: TeamDto; delta: number }
+  /**
+   * Sorotan regu tercepat berubah: satu regu mulai disorot di layar penonton,
+   * atau sorotan dibersihkan saat soal baru dibuka/diulang.
+   */
+  | { type: "highlight.updated"; at: string; highlight: HighlightDto }
   /** Pengaturan sesi (cooldown/poin) berubah. */
   | { type: "session.updated"; at: string; session: SessionDto }
   /**
@@ -131,6 +148,8 @@ export type SessionEvent =
       phase: QuestionPhase;
       round: RoundDto | null;
       ranking: BuzzEventDto[];
+      /** Sorotan regu tercepat saat ini, atau kosong bila belum ada. */
+      highlight: HighlightDto;
       cooldownSeconds: number;
       serverTime: string;
       teams: TeamDto[];

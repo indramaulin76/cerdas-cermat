@@ -5,7 +5,7 @@ import type {
   BuzzOrderResponse,
   RecordBuzzRequest,
 } from "@/lib/ccl/api";
-import { getBuzzOrder, recordBuzz, toBuzzEventDto } from "@/server/buzz";
+import { getBuzzOrder, recordBuzz, toBuzzEventDto, toHighlightDto } from "@/server/buzz";
 import { publish } from "@/server/events";
 
 /**
@@ -119,12 +119,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   // Siarkan ke moderator, regu lain, dan layar penonton. Tekanan ulang tidak
   // disiarkan ulang agar urutan tidak bergetar.
   if (!outcome.duplicate) {
+    const ranking = outcome.ranking.map(toBuzzEventDto);
     publish(sessionId, {
       type: "buzz.recorded",
       at: new Date().toISOString(),
       order: outcome.order,
       event,
-      ranking: outcome.ranking.map(toBuzzEventDto),
+      ranking,
+    });
+
+    // Sorotan regu tercepat untuk layar penonton: regu paling atas urutan.
+    publish(sessionId, {
+      type: "highlight.updated",
+      at: new Date().toISOString(),
+      highlight: toHighlightDto(outcome.ranking[0] ?? null),
     });
   }
 

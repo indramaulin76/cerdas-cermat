@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import type { ApiErrorResponse, ResetRoundResponse } from "@/lib/ccl/api";
 import { requireModerator } from "@/server/auth";
+import { toHighlightDto } from "@/server/buzz";
 import { publish } from "@/server/events";
 import { resetRound } from "@/server/round";
 
@@ -39,6 +40,13 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     type: "round.reset",
     at: new Date().toISOString(),
     roundId: outcome.closed?.id ?? null,
+  });
+
+  // Soal diulang: sorotan regu tercepat dibersihkan.
+  publish(sessionId, {
+    type: "highlight.updated",
+    at: new Date().toISOString(),
+    highlight: toHighlightDto(null),
   });
 
   const response: ResetRoundResponse = {
