@@ -1,22 +1,20 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TEAM_COLORS, nextTeamColor } from "@/lib/ccl/team-colors";
 import type { Team } from "@/lib/ccl/types";
 
 /**
  * Halaman kelola regu (dipakai admin sebelum lomba dimulai).
  *
- * Tahap ini sudah bisa menambah dan mengurangi regu dengan batas maksimal
- * (lihat `maxTeams`). Ubah nama dan pemilih warna ditambahkan pada tugas
- * berikutnya.
+ * Mendukung menambah/mengurangi regu (maksimal lihat `maxTeams`), ubah nama
+ * dengan validasi, dan warna otomatis yang bisa disesuaikan lewat pemilih
+ * warna. Warna disimpan di data regu sehingga tampil sama di semua dashboard.
  */
-
-/** Warna sementara untuk regu baru; pemilih warna menyusul. */
-const DEFAULT_COLOR = "#64748b";
 
 /** Id unik untuk regu baru. */
 function newId(): string {
@@ -68,6 +66,7 @@ export function TeamManager({
 }) {
   const [teams, setTeams] = useState<Team[]>(initialTeams);
   const [notice, setNotice] = useState<string | null>(null);
+  const [openColorId, setOpenColorId] = useState<string | null>(null);
 
   const atMax = teams.length >= maxTeams;
 
@@ -87,7 +86,8 @@ export function TeamManager({
             {
               id: newId(),
               name: nextTeamName(current),
-              color: DEFAULT_COLOR,
+              // Warna otomatis: pilih yang belum dipakai regu lain.
+              color: nextTeamColor(current.map((team) => team.color)),
               score: 0,
             },
           ],
@@ -96,6 +96,7 @@ export function TeamManager({
 
   const removeTeam = useCallback((id: string) => {
     setNotice(null);
+    setOpenColorId((open) => (open === id ? null : open));
     setTeams((current) => current.filter((team) => team.id !== id));
   }, []);
 
@@ -103,6 +104,16 @@ export function TeamManager({
     setTeams((current) =>
       current.map((team) => (team.id === id ? { ...team, name } : team)),
     );
+  }, []);
+
+  const updateColor = useCallback((id: string, color: string) => {
+    setTeams((current) =>
+      current.map((team) => (team.id === id ? { ...team, color } : team)),
+    );
+  }, []);
+
+  const toggleColorPicker = useCallback((id: string) => {
+    setOpenColorId((open) => (open === id ? null : id));
   }, []);
 
   const duplicateNames = findDuplicateNames(teams);
@@ -149,44 +160,87 @@ export function TeamManager({
               return (
                 <li
                   key={team.id}
-                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur sm:gap-4"
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur"
                 >
-                  <span className="w-5 text-center text-sm font-bold text-muted-foreground tabular-nums">
-                    {index + 1}
-                  </span>
-                  <span
-                    className="flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-black text-white"
-                    style={{ backgroundColor: team.color }}
-                    aria-hidden
-                  >
-                    {team.name.replace(/^Regu\s+/i, "").charAt(0).toUpperCase() ||
-                      "?"}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <input
-                      type="text"
-                      value={team.name}
-                      onChange={(event) =>
-                        updateName(team.id, event.target.value)
-                      }
-                      aria-label={`Nama regu ${index + 1}`}
-                      aria-invalid={error ? true : undefined}
-                      className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold outline-none transition-colors focus-visible:border-fuchsia-400 focus-visible:ring-2 focus-visible:ring-fuchsia-400/30 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/30"
-                    />
-                    {error ? (
-                      <p className="mt-1 text-xs text-destructive">{error}</p>
-                    ) : null}
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <span className="w-5 text-center text-sm font-bold text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleColorPicker(team.id)}
+                      aria-label={`Ubah warna ${team.name || `regu ${index + 1}`}`}
+                      aria-expanded={openColorId === team.id}
+                      className="flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-black text-white ring-2 ring-white/15 transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-fuchsia-400 focus-visible:outline-none"
+                      style={{ backgroundColor: team.color }}
+                    >
+                      {team.name
+                        .replace(/^Regu\s+/i, "")
+                        .charAt(0)
+                        .toUpperCase() || "?"}
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <input
+                        type="text"
+                        value={team.name}
+                        onChange={(event) =>
+                          updateName(team.id, event.target.value)
+                        }
+                        aria-label={`Nama regu ${index + 1}`}
+                        aria-invalid={error ? true : undefined}
+                        className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold outline-none transition-colors focus-visible:border-fuchsia-400 focus-visible:ring-2 focus-visible:ring-fuchsia-400/30 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/30"
+                      />
+                      {error ? (
+                        <p className="mt-1 text-xs text-destructive">{error}</p>
+                      ) : null}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeTeam(team.id)}
+                      aria-label={`Hapus ${team.name || `regu ${index + 1}`}`}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 />
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeTeam(team.id)}
-                    aria-label={`Hapus ${team.name || `regu ${index + 1}`}`}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 />
-                  </Button>
+
+                  {openColorId === team.id ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-2">
+                      {TEAM_COLORS.map((color) => {
+                        const selected =
+                          color.toLowerCase() === team.color.toLowerCase();
+                        return (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => updateColor(team.id, color)}
+                            aria-label={`Pilih warna ${color}`}
+                            aria-pressed={selected}
+                            className="flex size-7 items-center justify-center rounded-lg ring-2 ring-transparent transition-transform hover:scale-110"
+                            style={{ backgroundColor: color }}
+                          >
+                            {selected ? (
+                              <Check className="size-4 text-white" />
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                      <label className="ml-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <input
+                          type="color"
+                          value={team.color}
+                          onChange={(event) =>
+                            updateColor(team.id, event.target.value)
+                          }
+                          aria-label="Warna kustom"
+                          className="size-7 cursor-pointer rounded-lg border border-white/10 bg-transparent"
+                        />
+                        Kustom
+                      </label>
+                    </div>
+                  ) : null}
                 </li>
               );
             })}
