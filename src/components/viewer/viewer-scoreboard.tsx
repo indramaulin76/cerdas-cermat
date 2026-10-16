@@ -40,7 +40,7 @@ export function ViewerScoreboard({
   const leaderScore = standings[0]?.score ?? 0;
 
   return (
-    <ol className="grid flex-1 grid-cols-1 content-start gap-4 sm:grid-cols-2">
+    <ol className="grid flex-1 grid-cols-1 content-start gap-3 sm:grid-cols-2 sm:gap-4 2xl:gap-6">
       {standings.map((team, index) => {
         const rank = index + 1;
         const isLeader = rank === 1 && leaderScore > 0;
@@ -51,7 +51,7 @@ export function ViewerScoreboard({
           <li
             key={team.id}
             className={cn(
-              "relative flex items-center gap-4 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl sm:gap-6 sm:p-6",
+              "relative flex items-center gap-3 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl sm:gap-6 sm:p-6 2xl:p-7",
               isLeader && "border-amber-400/50",
               isFastest && "z-10 animate-ccl-highlight border-transparent",
             )}
@@ -61,7 +61,7 @@ export function ViewerScoreboard({
           >
             <span
               aria-hidden
-              className="absolute inset-y-0 left-0 w-2"
+              className="absolute inset-y-0 left-0 w-1.5 sm:w-2"
               style={{ backgroundColor: team.color }}
             />
 
@@ -78,7 +78,7 @@ export function ViewerScoreboard({
 
             <span
               className={cn(
-                "relative w-8 shrink-0 text-center text-2xl font-black tabular-nums sm:text-3xl",
+                "relative w-6 shrink-0 text-center text-xl font-black tabular-nums sm:w-8 sm:text-3xl 2xl:text-4xl",
                 RANK_ACCENT[rank] ?? "text-muted-foreground/70",
               )}
             >
@@ -86,7 +86,7 @@ export function ViewerScoreboard({
             </span>
 
             <span
-              className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl text-2xl font-black text-white sm:size-16 sm:text-3xl"
+              className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl text-xl font-black text-white sm:size-16 sm:text-3xl 2xl:size-20 2xl:text-4xl"
               style={{
                 backgroundColor: team.color,
                 boxShadow: `0 0 24px -2px color-mix(in oklch, ${team.color} 70%, transparent)`,
@@ -97,7 +97,7 @@ export function ViewerScoreboard({
             </span>
 
             <div className="relative min-w-0 flex-1">
-              <p className="truncate text-xl font-black tracking-tight sm:text-2xl">
+              <p className="truncate text-base font-black tracking-tight sm:text-2xl 2xl:text-3xl">
                 {team.name}
               </p>
               {isFastest ? (
@@ -116,7 +116,7 @@ export function ViewerScoreboard({
 
             <span
               className={cn(
-                "relative shrink-0 text-5xl leading-none font-black tabular-nums sm:text-6xl",
+                "relative shrink-0 text-4xl leading-none font-black tabular-nums sm:text-6xl 2xl:text-7xl",
                 isScoring && "animate-ccl-pop",
               )}
               style={{

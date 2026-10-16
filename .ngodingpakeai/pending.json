@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "bc1d6bfc79fec3a27f4394de0661bd8f88fa528e",
+  "generatedForCommit": "cd50ca71d740fb4dbea424af282cfd3a4d8bd59b",
   "files": [
     {
       "path": ".gitignore",
@@ -214,9 +214,9 @@
     },
     {
       "path": "src/app/globals.css",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "css",
-      "size": 5912
+      "size": 6285
     },
     {
       "path": "src/app/layout.tsx",
@@ -298,21 +298,21 @@
     },
     {
       "path": "src/components/viewer/viewer-pin-gate.tsx",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 4628
+      "size": 5128
     },
     {
       "path": "src/components/viewer/viewer-scoreboard.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 4409
+      "size": 4746
     },
     {
       "path": "src/components/viewer/viewer-screen.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 4162
+      "size": 5255
     },
     {
       "path": "src/db/index.ts",
@@ -328,7 +328,7 @@
     },
     {
       "path": "src/hooks/use-mock-live.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 4188
     },
@@ -343,6 +343,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 9015
+    },
+    {
+      "path": "src/lib/ccl/theme.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 264
     },
     {
       "path": "src/lib/ccl/types.ts",

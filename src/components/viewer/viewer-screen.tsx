@@ -18,7 +18,7 @@ export function ViewerScreen({ session }: { session: Session }) {
   const fastestTeam = teams.find((team) => team.id === fastestTeamId) ?? null;
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-background text-foreground">
+    <main className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
       {/* Latar aurora bergerak ala panggung lomba. */}
       <div
         aria-hidden
@@ -39,16 +39,18 @@ export function ViewerScreen({ session }: { session: Session }) {
         />
       </div>
 
-      <header className="relative z-10 flex flex-wrap items-center justify-between gap-4 px-6 py-6 sm:px-10">
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-500 to-cyan-400 text-lg font-black text-white shadow-lg shadow-fuchsia-500/30">
+      <header className="relative z-10 flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-10 sm:py-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-violet-500 to-cyan-400 text-lg font-black text-white shadow-lg shadow-fuchsia-500/30 2xl:size-14 2xl:text-xl">
             CC
           </span>
-          <div className="leading-tight">
+          <div className="min-w-0 leading-tight">
             <p className="bg-gradient-to-r from-fuchsia-400 to-cyan-300 bg-clip-text text-sm font-semibold tracking-widest text-transparent uppercase">
               Cerdas Cermat Live
             </p>
-            <p className="text-lg font-bold">{session.title}</p>
+            <p className="truncate text-lg font-bold sm:text-2xl 2xl:text-3xl">
+              {session.title}
+            </p>
           </div>
         </div>
 
@@ -63,37 +65,37 @@ export function ViewerScreen({ session }: { session: Session }) {
 
       {/* Sorotan regu tercepat. */}
       <div
-        className="relative z-10 px-6 sm:px-10"
+        className="relative z-10 px-5 sm:px-10"
         aria-live="polite"
         aria-atomic="true"
       >
         {fastestTeam ? (
           <div
-            className="flex animate-ccl-pop items-center justify-center gap-3 rounded-2xl border px-5 py-3 text-center"
+            className="flex animate-ccl-pop flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl border px-5 py-3 text-center"
             style={{
               borderColor: `color-mix(in oklch, ${fastestTeam.color} 60%, transparent)`,
               backgroundColor: `color-mix(in oklch, ${fastestTeam.color} 18%, transparent)`,
             }}
           >
             <span className="text-xl">⚡</span>
-            <p className="text-lg font-bold sm:text-xl">
+            <p className="text-base font-bold sm:text-xl 2xl:text-2xl">
               {fastestTeam.name} menjawab paling dulu!
             </p>
           </div>
         ) : (
           <div className="flex items-center justify-center rounded-2xl border border-border/50 bg-card/40 px-5 py-3">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-center text-sm text-muted-foreground">
               Menunggu regu menekan tombol jawab…
             </p>
           </div>
         )}
       </div>
 
-      <section className="relative z-10 flex flex-1 flex-col gap-6 px-6 pb-6 sm:px-10">
-        <div className="flex items-end justify-between gap-4">
+      <section className="relative z-10 flex flex-1 flex-col gap-4 px-5 pb-5 sm:gap-6 sm:px-10 sm:pb-6 2xl:px-14">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-fuchsia-400 to-cyan-400" />
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+            <h1 className="text-2xl font-black tracking-tight sm:text-4xl 2xl:text-5xl">
               Papan Skor
             </h1>
           </div>
@@ -109,7 +111,7 @@ export function ViewerScreen({ session }: { session: Session }) {
         />
       </section>
 
-      <footer className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 px-6 py-4 text-xs text-muted-foreground sm:px-10">
+      <footer className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 px-5 py-4 text-xs text-muted-foreground sm:px-10">
         <p>Waktu jawab {session.cooldownSeconds}s</p>
         <p>
           Benar +{session.correctPoints} · Salah {session.wrongPoints}

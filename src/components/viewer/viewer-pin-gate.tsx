@@ -18,7 +18,7 @@ const PIN_LENGTH = 4;
 
 /** Gaya tombol papan angka agar konsisten. */
 const KEY_CLASS =
-  "flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-2xl font-bold tabular-nums transition-transform hover:bg-white/[0.12] active:scale-95 sm:h-16";
+  "flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-2xl font-bold tabular-nums transition-transform hover:bg-white/[0.12] active:scale-95 sm:h-16 2xl:h-20 2xl:text-3xl";
 
 export function ViewerPinGate({
   title,
@@ -65,7 +65,7 @@ export function ViewerPinGate({
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
   return (
-    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-5 py-10 text-foreground">
+    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-x-clip bg-background px-5 py-8 text-foreground sm:py-10">
       {/* Latar aurora agar selaras dengan papan skor. */}
       <div
         aria-hidden
@@ -84,7 +84,7 @@ export function ViewerPinGate({
 
       <div
         className={cn(
-          "relative z-10 w-full max-w-sm rounded-4xl border border-white/10 bg-white/[0.05] p-6 shadow-2xl shadow-fuchsia-500/10 backdrop-blur-xl sm:p-8",
+          "relative z-10 w-full max-w-sm rounded-4xl border border-white/10 bg-white/[0.05] p-6 shadow-2xl shadow-fuchsia-500/10 backdrop-blur-xl sm:p-8 2xl:max-w-md 2xl:p-10",
           error && "animate-ccl-shake",
         )}
       >
