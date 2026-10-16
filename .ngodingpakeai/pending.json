@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "cd50ca71d740fb4dbea424af282cfd3a4d8bd59b",
+  "generatedForCommit": "acd8b890e6611a100abf5d44d6bd9390ad6f70de",
   "files": [
     {
       "path": ".gitignore",
@@ -214,7 +214,7 @@
     },
     {
       "path": "src/app/globals.css",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "css",
       "size": 6285
     },
@@ -300,19 +300,19 @@
       "path": "src/components/viewer/viewer-pin-gate.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 5128
+      "size": 5180
     },
     {
       "path": "src/components/viewer/viewer-scoreboard.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 4746
+      "size": 4853
     },
     {
       "path": "src/components/viewer/viewer-screen.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 5255
+      "size": 5471
     },
     {
       "path": "src/db/index.ts",
@@ -346,7 +346,7 @@
     },
     {
       "path": "src/lib/ccl/theme.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 264
     },
