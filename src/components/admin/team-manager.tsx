@@ -34,6 +34,31 @@ function nextTeamName(teams: Team[]): string {
   return `Regu ${n}`;
 }
 
+/** Kumpulan nama regu (huruf kecil, tanpa spasi tepi) yang dipakai lebih dari satu regu. */
+function findDuplicateNames(teams: Team[]): Set<string> {
+  const counts = new Map<string, number>();
+  for (const team of teams) {
+    const key = team.name.trim().toLowerCase();
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const duplicates = new Set<string>();
+  for (const [key, count] of counts) {
+    if (count > 1) duplicates.add(key);
+  }
+  return duplicates;
+}
+
+/** Pesan kesalahan nama regu, atau null bila valid. */
+function teamNameError(team: Team, duplicateNames: Set<string>): string | null {
+  const trimmed = team.name.trim();
+  if (!trimmed) return "Nama regu tidak boleh kosong.";
+  if (duplicateNames.has(trimmed.toLowerCase())) {
+    return "Nama regu sudah dipakai regu lain.";
+  }
+  return null;
+}
+
 export function TeamManager({
   initialTeams,
   maxTeams,
@@ -74,6 +99,14 @@ export function TeamManager({
     setTeams((current) => current.filter((team) => team.id !== id));
   }, []);
 
+  const updateName = useCallback((id: string, name: string) => {
+    setTeams((current) =>
+      current.map((team) => (team.id === id ? { ...team, name } : team)),
+    );
+  }, []);
+
+  const duplicateNames = findDuplicateNames(teams);
+
   return (
     <main className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
       {/* Latar bercahaya. */}
@@ -111,37 +144,52 @@ export function TeamManager({
           </div>
         ) : (
           <ul className="grid gap-2">
-            {teams.map((team, index) => (
-              <li
-                key={team.id}
-                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur"
-              >
-                <span className="w-5 text-center text-sm font-bold text-muted-foreground tabular-nums">
-                  {index + 1}
-                </span>
-                <span
-                  className="flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-black text-white"
-                  style={{ backgroundColor: team.color }}
-                  aria-hidden
+            {teams.map((team, index) => {
+              const error = teamNameError(team, duplicateNames);
+              return (
+                <li
+                  key={team.id}
+                  className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur sm:gap-4"
                 >
-                  {team.name.replace(/^Regu\s+/i, "").charAt(0).toUpperCase() ||
-                    "?"}
-                </span>
-                <span className="min-w-0 flex-1 truncate font-semibold">
-                  {team.name}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeTeam(team.id)}
-                  aria-label={`Hapus ${team.name}`}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 />
-                </Button>
-              </li>
-            ))}
+                  <span className="w-5 text-center text-sm font-bold text-muted-foreground tabular-nums">
+                    {index + 1}
+                  </span>
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-xl text-base font-black text-white"
+                    style={{ backgroundColor: team.color }}
+                    aria-hidden
+                  >
+                    {team.name.replace(/^Regu\s+/i, "").charAt(0).toUpperCase() ||
+                      "?"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <input
+                      type="text"
+                      value={team.name}
+                      onChange={(event) =>
+                        updateName(team.id, event.target.value)
+                      }
+                      aria-label={`Nama regu ${index + 1}`}
+                      aria-invalid={error ? true : undefined}
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold outline-none transition-colors focus-visible:border-fuchsia-400 focus-visible:ring-2 focus-visible:ring-fuchsia-400/30 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/30"
+                    />
+                    {error ? (
+                      <p className="mt-1 text-xs text-destructive">{error}</p>
+                    ) : null}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeTeam(team.id)}
+                    aria-label={`Hapus ${team.name || `regu ${index + 1}`}`}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 />
+                  </Button>
+                </li>
+              );
+            })}
           </ul>
         )}
 

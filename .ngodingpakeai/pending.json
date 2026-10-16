@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "8a0dffd166ffa8f17e5531e141c70aa31c217e40",
+  "generatedForCommit": "10c99169abe5fa860809dbce652309c3921ee779",
   "files": [
     {
       "path": ".gitignore",
@@ -220,9 +220,9 @@
     },
     {
       "path": "src/app/kelola-regu/page.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 604
+      "size": 611
     },
     {
       "path": "src/app/layout.tsx",
@@ -256,9 +256,9 @@
     },
     {
       "path": "src/components/admin/team-manager.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2807
+      "size": 5868
     },
     {
       "path": "src/components/moderator/moderator-dashboard.tsx",
