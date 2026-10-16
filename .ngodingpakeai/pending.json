@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "8677da6acfc0f8773ba2f08211ad1196a97eea05",
+  "generatedForCommit": "bd5f5d7f5ec008b325998e86d9eb438920537f42",
   "files": [
     {
       "path": ".gitignore",
@@ -166,7 +166,7 @@
     },
     {
       "path": "src/app/api/admin/auth/route.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1979
     },
@@ -214,7 +214,7 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/settings/route.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2674
     },
@@ -430,7 +430,7 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 12940
     },
@@ -514,13 +514,13 @@
     },
     {
       "path": "src/server/admin-auth.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2903
     },
     {
       "path": "src/server/auth.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 5332
     },
@@ -541,6 +541,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 4064
+    },
+    {
+      "path": "src/server/session-code.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3008
     },
     {
       "path": "src/server/session.ts",
@@ -574,7 +580,7 @@
     },
     {
       "path": "src/server/token.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1267
     },

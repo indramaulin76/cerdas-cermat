@@ -11,8 +11,9 @@ import "server-only";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { sessions, type SessionRow } from "@/db/schema";
-import type { SessionDto } from "@/lib/ccl/api";
+import { sessions, type NewSessionRow, type SessionRow } from "@/db/schema";
+import type { SessionDetailDto, SessionDto } from "@/lib/ccl/api";
+import { generateRolePins, generateSessionId, sessionLinks } from "@/server/session-code";
 
 /** Ubah baris sesi menjadi DTO untuk dikirim ke klien. */
 export function toSessionDto(row: SessionRow): SessionDto {
@@ -23,6 +24,23 @@ export function toSessionDto(row: SessionRow): SessionDto {
     correctPoints: row.correctPoints,
     wrongPoints: row.wrongPoints,
     status: row.status as "draft" | "active" | "finished",
+  };
+}
+
+/**
+ * Ubah baris sesi menjadi detail lengkap untuk halaman admin: pengaturan,
+ * ditambah link dan PIN tiap peran.
+ */
+export function toSessionDetailDto(row: SessionRow): SessionDetailDto {
+  return {
+    ...toSessionDto(row),
+    createdAt: row.createdAt.toISOString(),
+    links: sessionLinks(row.id),
+    pins: {
+      moderator: row.moderatorPin ?? "",
+      viewer: row.viewerPin ?? "",
+      team: row.teamPin ?? "",
+    },
   };
 }
 
@@ -115,4 +133,36 @@ export function updateSessionSettings(
 
     return { status: "updated", row: { ...row, ...patch, updatedAt: now } } as const;
   });
+}
+
+/** Masukan pembuatan sesi lomba baru. */
+export type CreateSessionInput = {
+  /** Nama acara/cerdas cermat. */
+  title: string;
+};
+
+/**
+ * Buat sesi lomba baru.
+ *
+ * Id sesi dibuat unik & ramah link, lalu tiap peran mendapat PIN sendiri. Sesi
+ * lahir berstatus `draft` sampai admin mengaktifkannya, dan memakai nilai awal
+ * pengaturan yang masuk akal (cooldown 10 detik, +100 / -50 poin).
+ */
+export function createSession(input: CreateSessionInput): SessionRow {
+  const id = generateSessionId(input.title);
+  const pins = generateRolePins();
+  const now = new Date();
+
+  const row: NewSessionRow = {
+    id,
+    title: input.title,
+    moderatorPin: pins.moderator,
+    viewerPin: pins.viewer,
+    teamPin: pins.team,
+    status: "draft",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  return db.insert(sessions).values(row).returning().get();
 }

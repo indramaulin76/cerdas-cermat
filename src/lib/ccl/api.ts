@@ -8,6 +8,8 @@
  * ke server sungguhan.
  */
 
+import type { RoleId } from "@/lib/ccl/roles";
+
 /** Satu catatan tekanan tombol sebagaimana dikirim ke klien. */
 export type BuzzEventDto = {
   id: string;
@@ -391,6 +393,39 @@ export type SessionDto = {
   wrongPoints: number;
   status: "draft" | "active" | "finished";
 };
+
+/** Link akses tiap peran untuk sebuah sesi. */
+export type RoleLinks = Record<RoleId, string>;
+
+/** PIN masuk tiap peran untuk sebuah sesi. */
+export type RolePins = Record<RoleId, string>;
+
+/** Detail sesi untuk halaman admin, termasuk link & PIN tiap peran. */
+export type SessionDetailDto = SessionDto & {
+  /** Waktu dibuat (ISO-8601). */
+  createdAt: string;
+  /** Link akses moderator/layar penonton/HP regu. */
+  links: RoleLinks;
+  /** PIN masuk tiap peran (hanya untuk admin). */
+  pins: RolePins;
+};
+
+/** Permintaan membuat sesi lomba baru. */
+export type CreateSessionRequest = {
+  /** Nama acara/cerdas cermat, mis. "Cerdas Cermat Live — Babak Penyisihan". */
+  title: string;
+};
+
+/** Balasan membuat sesi baru (sesi langsung lengkap dengan link & PIN). */
+export type CreateSessionResponse = {
+  ok: true;
+  session: SessionDetailDto;
+};
+
+/** Endpoint kumpulan sesi (buat/daftar sesi). */
+export function sessionsPath(): string {
+  return `/api/sessions`;
+}
 
 /** Permintaan mengubah pengaturan sesi. */
 export type UpdateSettingsRequest = {
