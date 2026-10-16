@@ -13,7 +13,14 @@ import { randomUUID } from "node:crypto";
 import { and, asc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { sessions, teams, type NewTeamRow, type TeamRow } from "@/db/schema";
+import {
+  buzzEvents,
+  rounds,
+  sessions,
+  teams,
+  type NewTeamRow,
+  type TeamRow,
+} from "@/db/schema";
 import type { TeamDto } from "@/lib/ccl/api";
 import { nextTeamColor } from "@/lib/ccl/team-colors";
 
@@ -309,6 +316,79 @@ export function updateTeam(input: UpdateTeamInput): UpdateTeamOutcome {
       status: "updated",
       row: { ...team, ...patch } as TeamRow,
     } as const;
+  });
+}
+
+/** Masukan penghapusan regu. */
+export type RemoveTeamInput = {
+  sessionId: string;
+  teamId: string;
+};
+
+/** Hasil penghapusan regu. */
+export type RemoveTeamOutcome =
+  | { status: "deleted"; row: TeamRow }
+  | { status: "unknown_team"; teamId: string }
+  | { status: "team_active"; roundId: string };
+
+/**
+ * Hapus sebuah regu dari sesi.
+ *
+ * Validasi:
+ * - Regu harus ada pada sesi ini (jika tidak → `unknown_team`).
+ * - Regu yang sedang ikut pada soal/ronde yang masih terbuka tidak boleh
+ *   dihapus (`team_active`), supaya urutan jawab dan sorotan regu tercepat
+ *   yang sudah disiarkan tidak menunjuk ke regu yang hilang. Kosongkan/ulangi
+ *   ronde dulu, lalu hapus.
+ *
+ * Menghapus regu ikut menghapus catatan tekanan miliknya (lewat foreign key
+ * cascade) tanpa mengganggu regu lain.
+ */
+export function removeTeam(input: RemoveTeamInput): RemoveTeamOutcome {
+  return db.transaction((tx) => {
+    const team = tx
+      .select()
+      .from(teams)
+      .where(
+        and(eq(teams.id, input.teamId), eq(teams.sessionId, input.sessionId)),
+      )
+      .get();
+
+    if (!team) {
+      return { status: "unknown_team", teamId: input.teamId } as const;
+    }
+
+    const openRound = tx
+      .select({ id: rounds.id })
+      .from(rounds)
+      .where(
+        and(
+          eq(rounds.sessionId, input.sessionId),
+          eq(rounds.status, "open"),
+        ),
+      )
+      .get();
+
+    if (openRound) {
+      const activeBuzz = tx
+        .select({ id: buzzEvents.id })
+        .from(buzzEvents)
+        .where(
+          and(
+            eq(buzzEvents.roundId, openRound.id),
+            eq(buzzEvents.teamId, input.teamId),
+          ),
+        )
+        .get();
+
+      if (activeBuzz) {
+        return { status: "team_active", roundId: openRound.id } as const;
+      }
+    }
+
+    tx.delete(teams).where(eq(teams.id, input.teamId)).run();
+
+    return { status: "deleted", row: team } as const;
   });
 }
 

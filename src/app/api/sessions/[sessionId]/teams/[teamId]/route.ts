@@ -2,11 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import type {
   ApiErrorResponse,
+  DeleteTeamResponse,
   UpdateTeamRequest,
   UpdateTeamResponse,
 } from "@/lib/ccl/api";
 import { requireModerator } from "@/server/auth";
-import { toTeamDto, updateTeam } from "@/server/team";
+import { removeTeam, toTeamDto, updateTeam } from "@/server/team";
 
 type RouteParams = { params: Promise<{ sessionId: string; teamId: string }> };
 
@@ -106,6 +107,56 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   const response: UpdateTeamResponse = {
+    ok: true,
+    team: toTeamDto(outcome.row),
+  };
+  return NextResponse.json(response);
+}
+
+/**
+ * Hapus sebuah regu dari sesi (moderator/admin).
+ *
+ * `DELETE /api/sessions/[sessionId]/teams/[teamId]`
+ *
+ * Menolak regu yang tidak ada (404). Regu yang sedang aktif pada soal terbuka
+ * juga ditolak (409) supaya urutan jawab dan sorotan yang sudah disiarkan tetap
+ * konsisten. Catatan tekanan milik regu ikut terhapus lewat cascade.
+ */
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+  const { sessionId, teamId } = await params;
+
+  if (!sessionId || !teamId) {
+    return errorResponse(
+      "invalid_request",
+      "sessionId dan teamId wajib diisi.",
+      400,
+    );
+  }
+
+  const gate = await requireModerator(sessionId);
+  if (!gate.ok) {
+    return errorResponse(gate.error, gate.message, gate.status);
+  }
+
+  const outcome = removeTeam({ sessionId, teamId });
+
+  if (outcome.status === "unknown_team") {
+    return errorResponse(
+      "unknown_team",
+      `Regu "${teamId}" tidak ditemukan pada sesi ini.`,
+      404,
+    );
+  }
+
+  if (outcome.status === "team_active") {
+    return errorResponse(
+      "team_active",
+      "Regu ini sedang ikut pada soal terbuka. Kosongkan ronde dulu sebelum menghapus.",
+      409,
+    );
+  }
+
+  const response: DeleteTeamResponse = {
     ok: true,
     team: toTeamDto(outcome.row),
   };

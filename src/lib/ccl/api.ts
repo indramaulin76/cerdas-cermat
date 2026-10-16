@@ -307,6 +307,12 @@ export type UpdateTeamResponse = {
   team: TeamDto;
 };
 
+/** Balasan penghapusan regu (regu yang dihapus dikembalikan untuk konfirmasi). */
+export type DeleteTeamResponse = {
+  ok: true;
+  team: TeamDto;
+};
+
 /** Endpoint regu: perbarui/hapus regu tertentu dalam sesi. */
 export function teamPath(sessionId: string, teamId: string): string {
   return `/api/sessions/${encodeURIComponent(
