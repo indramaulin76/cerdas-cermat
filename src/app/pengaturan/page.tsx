@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { SettingsOverview } from "@/components/admin/settings-overview";
+import { SettingsForm } from "@/components/admin/settings-form";
 import { getMockSession, getMockSettings } from "@/lib/mock/session";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default function PengaturanPage() {
   const session = getMockSession();
 
   return (
-    <SettingsOverview
+    <SettingsForm
       sessionTitle={session.title}
       settings={getMockSettings()}
     />

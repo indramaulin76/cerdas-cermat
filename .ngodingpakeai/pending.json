@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "9d20226a88ed248202e9b6b555ae6b37bfe675fc",
+  "generatedForCommit": "34d50d5b28e15727498c4eb9ba994ec988b6cf69",
   "files": [
     {
       "path": ".gitignore",
@@ -267,6 +267,12 @@
       "size": 1713
     },
     {
+      "path": "src/app/pengaturan/page.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 723
+    },
+    {
       "path": "src/app/penonton/page.tsx",
       "reason": "needs_summary",
       "language": "typescript",
@@ -292,7 +298,7 @@
     },
     {
       "path": "src/components/admin/session-detail.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 10226
     },
@@ -301,6 +307,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 8770
+    },
+    {
+      "path": "src/components/admin/settings-overview.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 4931
     },
     {
       "path": "src/components/admin/team-manager.tsx",
@@ -423,6 +435,12 @@
       "size": 641
     },
     {
+      "path": "src/lib/ccl/settings.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 912
+    },
+    {
       "path": "src/lib/ccl/team-colors.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -454,9 +472,9 @@
     },
     {
       "path": "src/lib/mock/session.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 1732
+      "size": 2240
     },
     {
       "path": "src/lib/mock/sessions.ts",
