@@ -21,7 +21,7 @@ import {
   type NewTeamRow,
   type TeamRow,
 } from "@/db/schema";
-import type { TeamDto } from "@/lib/ccl/api";
+import type { SessionEvent, TeamDto } from "@/lib/ccl/api";
 import { nextTeamColor } from "@/lib/ccl/team-colors";
 
 /** Batas maksimal regu per sesi (sesuai PRD). */
@@ -50,6 +50,26 @@ export function listTeams(sessionId: string): TeamRow[] {
     .where(eq(teams.sessionId, sessionId))
     .orderBy(asc(teams.createdAt), asc(teams.id))
     .all();
+}
+
+type TeamsUpdatedEvent = Extract<SessionEvent, { type: "teams.updated" }>;
+
+/**
+ * Rakit peristiwa `teams.updated` dari daftar regu terkini.
+ *
+ * Dipakai route tambah/ubah/hapus regu agar dashboard moderator, layar
+ * penonton, dan HP regu menerima daftar terbaru tanpa memuat ulang.
+ */
+export function toTeamsUpdatedEvent(
+  sessionId: string,
+  action: TeamsUpdatedEvent["action"],
+): TeamsUpdatedEvent {
+  return {
+    type: "teams.updated",
+    at: new Date().toISOString(),
+    action,
+    teams: listTeams(sessionId).map(toTeamDto),
+  };
 }
 
 /** Ubah nama regu menjadi id yang aman untuk URL. */

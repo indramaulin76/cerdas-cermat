@@ -7,7 +7,13 @@ import type {
   UpdateTeamResponse,
 } from "@/lib/ccl/api";
 import { requireModerator } from "@/server/auth";
-import { removeTeam, toTeamDto, updateTeam } from "@/server/team";
+import { publish } from "@/server/events";
+import {
+  removeTeam,
+  toTeamDto,
+  toTeamsUpdatedEvent,
+  updateTeam,
+} from "@/server/team";
 
 type RouteParams = { params: Promise<{ sessionId: string; teamId: string }> };
 
@@ -110,6 +116,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     ok: true,
     team: toTeamDto(outcome.row),
   };
+
+  // Sinkronkan daftar regu ke semua dashboard.
+  publish(sessionId, toTeamsUpdatedEvent(sessionId, "updated"));
+
   return NextResponse.json(response);
 }
 
@@ -160,5 +170,9 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     ok: true,
     team: toTeamDto(outcome.row),
   };
+
+  // Sinkronkan daftar regu ke semua dashboard.
+  publish(sessionId, toTeamsUpdatedEvent(sessionId, "deleted"));
+
   return NextResponse.json(response);
 }

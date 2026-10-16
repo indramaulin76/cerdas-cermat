@@ -7,7 +7,13 @@ import type {
   TeamsResponse,
 } from "@/lib/ccl/api";
 import { requireModerator } from "@/server/auth";
-import { createTeam, listTeams, toTeamDto } from "@/server/team";
+import { publish } from "@/server/events";
+import {
+  createTeam,
+  listTeams,
+  toTeamDto,
+  toTeamsUpdatedEvent,
+} from "@/server/team";
 
 type RouteParams = { params: Promise<{ sessionId: string }> };
 
@@ -127,5 +133,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     ok: true,
     team: toTeamDto(outcome.row),
   };
+
+  // Sinkronkan daftar regu ke semua dashboard (moderator, penonton, HP regu).
+  publish(sessionId, toTeamsUpdatedEvent(sessionId, "created"));
+
   return NextResponse.json(response, { status: 201 });
 }

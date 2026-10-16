@@ -135,6 +135,18 @@ export type SessionEvent =
    * atau sorotan dibersihkan saat soal baru dibuka/diulang.
    */
   | { type: "highlight.updated"; at: string; highlight: HighlightDto }
+  /**
+   * Daftar regu berubah (tambah/ubah/hapus). Dipakai agar dashboard moderator,
+   * layar penonton, dan HP regu ikut sinkron tanpa memuat ulang.
+   */
+  | {
+      type: "teams.updated";
+      at: string;
+      /** Jenis perubahan, untuk animasi/notifikasi di klien. */
+      action: "created" | "updated" | "deleted";
+      /** Daftar regu terkini (lengkap, siap menggantikan daftar lama). */
+      teams: TeamDto[];
+    }
   /** Pengaturan sesi (cooldown/poin) berubah. */
   | { type: "session.updated"; at: string; session: SessionDto }
   /**
