@@ -4,6 +4,7 @@ import type { OpenRoundResponse, ApiErrorResponse } from "@/lib/ccl/api";
 import { requireModerator } from "@/server/auth";
 import { publish } from "@/server/events";
 import { openRound, toRoundDto } from "@/server/round";
+import { getSession } from "@/server/session";
 
 type RouteParams = { params: Promise<{ sessionId: string }> };
 
@@ -34,11 +35,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     round,
   };
 
+  // Sinkronisasi aba-aba: semua klien memakai `armAt` yang sama, bukan jam
+  // lokal masing-masing, supaya reaksi terukur dari momen yang adil.
+  const cooldownSeconds = getSession(sessionId)?.cooldownSeconds ?? 10;
+  const armAt = round.startedAt ?? new Date().toISOString();
+
   // Siarkan ke semua HP regu (mulai aba-aba) dan moderator/layar penonton.
   publish(sessionId, {
     type: "round.opened",
     at: new Date().toISOString(),
     round,
+    armAt,
+    cooldownSeconds,
   });
 
   return NextResponse.json(response, { status: 201 });

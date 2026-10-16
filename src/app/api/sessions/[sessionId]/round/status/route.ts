@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { ApiErrorResponse, RoundStatusResponse } from "@/lib/ccl/api";
 import { toBuzzEventDto } from "@/server/buzz";
 import { getRoundStatus, toRoundDto } from "@/server/round";
+import { getSession } from "@/server/session";
 
 type RouteParams = { params: Promise<{ sessionId: string }> };
 
@@ -11,8 +12,8 @@ type RouteParams = { params: Promise<{ sessionId: string }> };
  *
  * `GET /api/sessions/[sessionId]/round/status`
  *
- * Mengembalikan fase soal (idle/open/locked), ronde aktif, dan urutan jawab
- * terkini supaya moderator tahu kapan soal terbuka dan siapa yang tercepat.
+ * Mengembalikan fase soal (idle/open/locked), ronde aktif, urutan jawab
+ * terkini, lama jendela jawab, dan waktu server untuk sinkronisasi jam.
  */
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   const { sessionId } = await params;
@@ -31,6 +32,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     round: status.round ? toRoundDto(status.round) : null,
     ranking: status.ranking.map(toBuzzEventDto),
     winner: status.winner ? toBuzzEventDto(status.winner) : null,
+    cooldownSeconds: getSession(sessionId)?.cooldownSeconds ?? 10,
+    serverTime: new Date().toISOString(),
   };
   return NextResponse.json(response);
 }

@@ -96,7 +96,15 @@ export type TeamStatusResponse = {
  */
 export type SessionEvent =
   /** Moderator membuka soal baru: kunci regu direset & aba-aba dimulai. */
-  | { type: "round.opened"; at: string; round: RoundDto }
+  | {
+      type: "round.opened";
+      at: string;
+      round: RoundDto;
+      /** Momen tombol mulai aktif (ISO) untuk sinkronisasi aba-aba. */
+      armAt: string;
+      /** Lama jendela jawab (detik). */
+      cooldownSeconds: number;
+    }
   /** Sebuah regu menekan tombol jawab (beserta urutan terkini). */
   | {
       type: "buzz.recorded";
@@ -110,6 +118,8 @@ export type SessionEvent =
   | { type: "round.reset"; at: string; roundId: string | null }
   /** Skor sebuah regu berubah: papan skor & penonton ikut diperbarui. */
   | { type: "score.updated"; at: string; team: TeamDto; delta: number }
+  /** Pengaturan sesi (cooldown/poin) berubah. */
+  | { type: "session.updated"; at: string; session: SessionDto }
   /** Denyut koneksi agar aliran tidak diputus oleh proxy. */
   | { type: "ping"; at: string };
 
@@ -157,6 +167,10 @@ export type RoundStatusResponse = {
   /** Urutan tekanan ronde ini (indeks 0 = tercepat). */
   ranking: BuzzEventDto[];
   winner: BuzzEventDto | null;
+  /** Lama jendela jawab (detik) untuk aba-aba. */
+  cooldownSeconds: number;
+  /** Waktu server saat ini (ISO) untuk sinkronisasi jam klien. */
+  serverTime: string;
 };
 
 /** Balasan saat mengosongkan/mengulang ronde. */
@@ -240,4 +254,35 @@ export function scorePath(sessionId: string, teamId: string): string {
   return `/api/sessions/${encodeURIComponent(
     sessionId,
   )}/teams/${encodeURIComponent(teamId)}/score`;
+}
+
+/** Bentuk sesi lomba untuk dikirim ke klien. */
+export type SessionDto = {
+  id: string;
+  title: string;
+  /** Jendela waktu jawab (detik) sejak soal dibuka. */
+  cooldownSeconds: number;
+  /** Poin untuk jawaban benar. */
+  correctPoints: number;
+  /** Poin untuk jawaban salah. */
+  wrongPoints: number;
+  status: "draft" | "active" | "finished";
+};
+
+/** Permintaan mengubah pengaturan sesi. */
+export type UpdateSettingsRequest = {
+  cooldownSeconds?: number;
+  correctPoints?: number;
+  wrongPoints?: number;
+};
+
+/** Balasan pengaturan sesi. */
+export type UpdateSettingsResponse = {
+  ok: true;
+  session: SessionDto;
+};
+
+/** Endpoint pengaturan sesi (cooldown & poin). */
+export function settingsPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/settings`;
 }
