@@ -1,42 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronRight, Plus, Users } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { SessionStatus, SessionSummary } from "@/lib/ccl/types";
+import {
+  SESSION_STATUS_CLASS,
+  SESSION_STATUS_LABEL,
+} from "@/lib/ccl/session-status";
+import { formatSessionDate } from "@/lib/ccl/format";
+import type { SessionSummary } from "@/lib/ccl/types";
+import {
+  addCreatedSession,
+  getCreatedSessions,
+  getServerCreatedSessions,
+  mergeSessions,
+  subscribeCreatedSessions,
+} from "@/lib/mock/session-store";
 
 /**
  * Halaman daftar sesi untuk admin.
  *
  * Menampilkan semua sesi lomba milik admin beserta status, jumlah regu, dan
  * waktu pembuatannya, serta form untuk membuat sesi baru (data tiruan). Sesi
- * baru langsung muncul di daftar dengan status "belum dimulai" (draft).
+ * baru langsung muncul di daftar dengan status "belum dimulai" (draft) dan
+ * disimpan di localStorage agar bisa dibuka lagi di halaman detail.
  */
-
-/** Label status sesi dalam bahasa Indonesia. */
-const STATUS_LABEL: Record<SessionStatus, string> = {
-  draft: "Belum dimulai",
-  active: "Berlangsung",
-  finished: "Selesai",
-};
-
-/** Kelas warna badge per status. */
-const STATUS_CLASS: Record<SessionStatus, string> = {
-  draft: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-  active: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-  finished: "border-white/15 bg-white/5 text-muted-foreground",
-};
-
-/** Format tanggal dibuat secara deterministik (zona waktu tetap). */
-function formatCreatedAt(iso: string): string {
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeZone: "Asia/Jakarta",
-  }).format(new Date(iso));
-}
 
 /** Id sesi baru yang aman untuk URL, dari nama acara + akhiran acak. */
 function newSessionId(title: string): string {
@@ -61,18 +52,18 @@ function sortSessions(sessions: SessionSummary[]): SessionSummary[] {
   );
 }
 
-export function SessionList({
-  initialSessions,
-}: {
-  initialSessions: SessionSummary[];
-}) {
-  const [sessions, setSessions] = useState<SessionSummary[]>(() =>
-    sortSessions(initialSessions),
+export function SessionList() {
+  const created = useSyncExternalStore(
+    subscribeCreatedSessions,
+    getCreatedSessions,
+    getServerCreatedSessions,
   );
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const sessions = useMemo(() => sortSessions(mergeSessions(created)), [created]);
 
   const resetForm = () => {
     setTitle("");
@@ -112,7 +103,7 @@ export function SessionList({
       teamCount: 0,
     };
 
-    setSessions((current) => sortSessions([session, ...current]));
+    addCreatedSession(session);
     setShowForm(false);
     resetForm();
     setNotice(`Sesi "${trimmed}" berhasil dibuat.`);
@@ -226,9 +217,9 @@ export function SessionList({
                         {session.title}
                       </h2>
                       <span
-                        className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASS[session.status]}`}
+                        className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${SESSION_STATUS_CLASS[session.status]}`}
                       >
-                        {STATUS_LABEL[session.status]}
+                        {SESSION_STATUS_LABEL[session.status]}
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -238,7 +229,7 @@ export function SessionList({
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <CalendarDays className="size-3.5" aria-hidden />
-                        Dibuat {formatCreatedAt(session.createdAt)}
+                        Dibuat {formatSessionDate(session.createdAt)}
                       </span>
                     </div>
                   </div>

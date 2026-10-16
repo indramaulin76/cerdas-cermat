@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "e69bad70e3e32e6871f6d2f94eff4ada70793c2a",
+  "generatedForCommit": "e162b418aaefe7c40624c2f842e05e275d58a457",
   "files": [
     {
       "path": ".gitignore",
@@ -280,15 +280,15 @@
     },
     {
       "path": "src/app/sesi/page.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 571
     },
     {
       "path": "src/components/admin/session-list.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 4789
+      "size": 9072
     },
     {
       "path": "src/components/admin/team-manager.tsx",
@@ -406,7 +406,7 @@
     },
     {
       "path": "src/lib/ccl/types.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2958
     },
@@ -418,7 +418,7 @@
     },
     {
       "path": "src/lib/mock/sessions.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1048
     },

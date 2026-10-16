@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { SessionList } from "@/components/admin/session-list";
-import { getMockSessions } from "@/lib/mock/sessions";
 
 export const metadata: Metadata = {
   title: "Sesi & Link — Cerdas Cermat Live",
@@ -12,9 +11,9 @@ export const metadata: Metadata = {
 /**
  * Halaman daftar sesi untuk admin.
  *
- * Tahap ini memakai data tiruan; penyimpanan sesi sungguhan menyusul pada layer
- * backend.
+ * Tahap ini memakai data tiruan; sesi buatan admin disimpan di localStorage
+ * sampai layer backend menyediakan penyimpanan sungguhan.
  */
 export default function SesiPage() {
-  return <SessionList initialSessions={getMockSessions()} />;
+  return <SessionList />;
 }
