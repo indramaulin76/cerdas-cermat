@@ -16,5 +16,5 @@ export const metadata: Metadata = {
  * ke dashboard lain menyusul pada layer backend.
  */
 export default function KelolaReguPage() {
-  return <TeamManager teams={MOCK_TEAMS} maxTeams={10} />;
+  return <TeamManager initialTeams={MOCK_TEAMS} maxTeams={10} />;
 }

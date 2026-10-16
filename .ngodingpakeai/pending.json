@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "acd8b890e6611a100abf5d44d6bd9390ad6f70de",
+  "generatedForCommit": "8a0dffd166ffa8f17e5531e141c70aa31c217e40",
   "files": [
     {
       "path": ".gitignore",
@@ -219,6 +219,12 @@
       "size": 6285
     },
     {
+      "path": "src/app/kelola-regu/page.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 604
+    },
+    {
       "path": "src/app/layout.tsx",
       "reason": "needs_summary",
       "language": "typescript",
@@ -247,6 +253,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 1523
+    },
+    {
+      "path": "src/components/admin/team-manager.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2807
     },
     {
       "path": "src/components/moderator/moderator-dashboard.tsx",
@@ -298,19 +310,19 @@
     },
     {
       "path": "src/components/viewer/viewer-pin-gate.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 5180
     },
     {
       "path": "src/components/viewer/viewer-scoreboard.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 4853
     },
     {
       "path": "src/components/viewer/viewer-screen.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 5471
     },
