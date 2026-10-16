@@ -32,6 +32,25 @@ export type Session = {
 };
 
 /**
+ * Status sebuah sesi lomba.
+ * - `draft`    — belum dimulai (masih disiapkan admin).
+ * - `active`   — sedang berjalan.
+ * - `finished` — sudah selesai.
+ */
+export type SessionStatus = "draft" | "active" | "finished";
+
+/** Ringkasan satu sesi untuk daftar sesi milik admin. */
+export type SessionSummary = {
+  id: string;
+  title: string;
+  status: SessionStatus;
+  /** Waktu dibuat (ISO-8601). */
+  createdAt: string;
+  /** Jumlah regu peserta pada sesi ini. */
+  teamCount: number;
+};
+
+/**
  * Fase tombol jawab regu.
  * - `waiting`   — layar siap menunggu, moderator belum membuka soal.
  * - `countdown` — aba-aba: hitungan mundur sebelum tombol aktif (adil & serentak).

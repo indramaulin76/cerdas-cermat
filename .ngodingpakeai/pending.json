@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "56dcbd523db693659e251aef662b3dcea3ef8846",
+  "generatedForCommit": "f910a4459d915aae5beb95b62b5fbeb21c857549",
   "files": [
     {
       "path": ".gitignore",
@@ -202,9 +202,9 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/teams/[teamId]/route.ts",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 4291
+      "size": 4594
     },
     {
       "path": "src/app/api/sessions/[sessionId]/teams/[teamId]/score/route.ts",
@@ -220,9 +220,9 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/teams/route.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 3456
+      "size": 3675
     },
     {
       "path": "src/app/api/sessions/[sessionId]/viewer/events/route.ts",
@@ -378,7 +378,7 @@
       "path": "src/lib/ccl/api.ts",
       "reason": "changed",
       "language": "typescript",
-      "size": 11980
+      "size": 12410
     },
     {
       "path": "src/lib/ccl/team-colors.ts",
@@ -462,7 +462,7 @@
       "path": "src/server/team.ts",
       "reason": "changed",
       "language": "typescript",
-      "size": 12842
+      "size": 13405
     },
     {
       "path": "tsconfig.json",
