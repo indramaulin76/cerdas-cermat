@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "34d50d5b28e15727498c4eb9ba994ec988b6cf69",
+  "generatedForCommit": "233649168b756b150427bfb21a0a5f4223c2235f",
   "files": [
     {
       "path": ".gitignore",
@@ -268,9 +268,9 @@
     },
     {
       "path": "src/app/pengaturan/page.tsx",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 723
+      "size": 711
     },
     {
       "path": "src/app/penonton/page.tsx",
@@ -309,10 +309,10 @@
       "size": 8770
     },
     {
-      "path": "src/components/admin/settings-overview.tsx",
+      "path": "src/components/admin/settings-form.tsx",
       "reason": "new",
       "language": "typescript",
-      "size": 4931
+      "size": 7648
     },
     {
       "path": "src/components/admin/team-manager.tsx",
@@ -436,7 +436,7 @@
     },
     {
       "path": "src/lib/ccl/settings.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 912
     },
@@ -472,7 +472,7 @@
     },
     {
       "path": "src/lib/mock/session.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2240
     },
