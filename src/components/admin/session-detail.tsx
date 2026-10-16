@@ -82,16 +82,16 @@ function CopyIconButton({
     <Button
       type="button"
       variant="ghost"
-      size="icon-sm"
+      size="icon"
       aria-label={label}
       title={label}
       onClick={onCopy}
       className={copied ? "text-emerald-300" : "text-muted-foreground"}
     >
       {copied ? (
-        <Check className="size-3.5" aria-hidden />
+        <Check className="size-4" aria-hidden />
       ) : (
-        <Copy className="size-3.5" aria-hidden />
+        <Copy className="size-4" aria-hidden />
       )}
     </Button>
   );
@@ -124,9 +124,9 @@ function RoleCard({
 
   return (
     <div
-      className={`flex flex-col gap-4 rounded-2xl border p-4 backdrop-blur sm:p-5 ${info.accent.card}`}
+      className={`flex h-full flex-col gap-4 rounded-2xl border p-4 backdrop-blur transition-colors sm:p-5 ${info.accent.card}`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <span
           className={`grid size-10 shrink-0 place-items-center rounded-xl ${info.accent.badge}`}
         >
@@ -144,8 +144,8 @@ function RoleCard({
         <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Link
         </span>
-        <div className="flex items-center gap-1.5">
-          <p className="min-w-0 flex-1 break-all rounded-lg border border-white/10 bg-black/25 px-2.5 py-2 font-mono text-xs text-foreground/90">
+        <div className="flex items-center gap-1">
+          <p className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/25 px-2.5 py-2 font-mono text-xs leading-relaxed break-all text-foreground/90">
             {url}
           </p>
           <CopyIconButton
@@ -161,8 +161,8 @@ function RoleCard({
           <KeyRound className="size-3.5" aria-hidden />
           PIN
         </span>
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-mono text-3xl font-black tracking-[0.35em]">
+        <div className="flex items-center justify-between gap-1">
+          <p className="font-mono text-2xl font-black tracking-[0.25em] tabular-nums sm:text-3xl sm:tracking-[0.35em]">
             {role.pin}
           </p>
           <CopyIconButton
@@ -176,20 +176,19 @@ function RoleCard({
       <Button
         type="button"
         variant="secondary"
-        size="sm"
-        className="mt-auto w-full"
+        className="mt-auto h-9 w-full"
         onClick={() => copy(combined, allKey)}
       >
         {allState === "copied" ? (
           <>
-            <Check className="size-3.5" aria-hidden />
+            <Check className="size-4" aria-hidden />
             Tersalin
           </>
         ) : allState === "error" ? (
           <>Gagal menyalin</>
         ) : (
           <>
-            <Copy className="size-3.5" aria-hidden />
+            <Copy className="size-4" aria-hidden />
             Salin link &amp; PIN
           </>
         )}
@@ -228,7 +227,7 @@ export function SessionDetail({
         <div className="absolute inset-0 bg-[radial-gradient(120%_110%_at_50%_-20%,color-mix(in_oklch,var(--color-primary)_16%,transparent),transparent_60%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8">
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-5 py-8 sm:px-8 sm:py-10">
         <Link
           href="/sesi"
           className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -257,8 +256,8 @@ export function SessionDetail({
               <Badge variant="outline" className="text-muted-foreground">
                 Fase 3 · data tiruan
               </Badge>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <h1 className="text-2xl font-black tracking-tight break-words sm:text-3xl">
                   {detail.session.title}
                 </h1>
                 <span
@@ -283,19 +282,25 @@ export function SessionDetail({
               </div>
             </header>
 
-            <section
-              aria-label="Link dan PIN tiap peran"
-              className="grid gap-4 md:grid-cols-3"
-            >
-              {detail.roles.map((role) => (
-                <RoleCard
-                  key={role.role}
-                  role={role}
-                  origin={origin}
-                  copy={copy}
-                  feedback={feedback}
-                />
-              ))}
+            <section aria-label="Link dan PIN tiap peran" className="space-y-3">
+              <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                Bagikan akses
+              </h2>
+              <div className="grid items-stretch gap-4 sm:gap-5 md:grid-cols-3">
+                {detail.roles.map((role) => (
+                  <RoleCard
+                    key={role.role}
+                    role={role}
+                    origin={origin}
+                    copy={copy}
+                    feedback={feedback}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Link dan PIN tetap sama tiap kali kamu membuka sesi ini, jadi
+                aman untuk dibagikan dan disimpan.
+              </p>
             </section>
 
             {/* Konfirmasi salin untuk pembaca layar. */}

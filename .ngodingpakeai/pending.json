@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "fe9151c2565eb1dfe34699475785080db0ac11f1",
+  "generatedForCommit": "21b99cd2f90933f67a6ff2925e3d1169921e1e22",
   "files": [
     {
       "path": ".gitignore",
@@ -256,9 +256,9 @@
     },
     {
       "path": "src/app/moderator/page.tsx",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 475
+      "size": 732
     },
     {
       "path": "src/app/page.tsx",
@@ -268,15 +268,15 @@
     },
     {
       "path": "src/app/penonton/page.tsx",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 746
+      "size": 864
     },
     {
       "path": "src/app/regu/page.tsx",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 1523
+      "size": 1698
     },
     {
       "path": "src/app/sesi/[sessionId]/page.tsx",
@@ -294,7 +294,7 @@
       "path": "src/components/admin/session-detail.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 10039
+      "size": 9716
     },
     {
       "path": "src/components/admin/session-list.tsx",
@@ -307,6 +307,18 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 12421
+    },
+    {
+      "path": "src/components/auth/role-gate.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3760
+    },
+    {
+      "path": "src/components/auth/role-pin-gate.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 5396
     },
     {
       "path": "src/components/moderator/moderator-dashboard.tsx",
@@ -349,18 +361,6 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 3375
-    },
-    {
-      "path": "src/components/viewer/viewer-app.tsx",
-      "reason": "needs_summary",
-      "language": "typescript",
-      "size": 2095
-    },
-    {
-      "path": "src/components/viewer/viewer-pin-gate.tsx",
-      "reason": "needs_summary",
-      "language": "typescript",
-      "size": 5180
     },
     {
       "path": "src/components/viewer/viewer-scoreboard.tsx",
@@ -411,6 +411,12 @@
       "size": 426
     },
     {
+      "path": "src/lib/ccl/roles.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3301
+    },
+    {
       "path": "src/lib/ccl/session-status.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -436,7 +442,7 @@
     },
     {
       "path": "src/lib/ccl/use-copy.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1956
     },
@@ -448,15 +454,15 @@
     },
     {
       "path": "src/lib/mock/session.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2016
+      "size": 1732
     },
     {
       "path": "src/lib/mock/sessions.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 3690
+      "size": 2322
     },
     {
       "path": "src/lib/utils.ts",
