@@ -1,28 +1,42 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   AlertCircle,
+  Check,
   Clock,
   Info,
+  RotateCcw,
+  Save,
   TrendingDown,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SETTINGS_LIMITS, type CompetitionSettings } from "@/lib/ccl/settings";
+import {
+  getServerStoredSettings,
+  getStoredSettings,
+  saveSettings,
+  subscribeSettings,
+} from "@/lib/mock/settings-store";
 
 /**
  * Form pengaturan lomba (admin).
  *
- * Mengatur aturan dasar lomba — waktu menjawab dan nilai poin benar/salah.
- * Tahap ini menyimpan nilai di state klien; simpan/muat ke server menyusul pada
- * tugas berikutnya.
+ * Mengatur aturan dasar lomba — waktu menjawab dan nilai poin benar/salah — lalu
+ * menyimpannya. Pengaturan tersimpan dibaca kembali saat halaman dibuka lagi dan
+ * dipakai sebagai nilai awal, sehingga tak perlu mengatur ulang dari awal.
+ * Tahap ini menyimpan di localStorage; layer backend menggantikannya nanti.
  */
 
 const COOLDOWN = SETTINGS_LIMITS.cooldownSeconds;
 const POINTS_MAX = SETTINGS_LIMITS.points.max;
+
+const NOTICE_MS = 2500;
 
 /** Periksa isian waktu menjawab; `null` bila wajar (1–600 detik). */
 function validateCooldown(raw: string): string | null {
@@ -139,6 +153,8 @@ function SettingNumberCard({
   );
 }
 
+type FieldKey = "cooldown" | "correct" | "wrong";
+
 export function SettingsForm({
   sessionTitle,
   settings,
@@ -146,16 +162,67 @@ export function SettingsForm({
   sessionTitle: string;
   settings: CompetitionSettings;
 }) {
-  const [cooldown, setCooldown] = useState(String(settings.cooldownSeconds));
-  const [correct, setCorrect] = useState(
-    String(Math.abs(settings.correctPoints)),
+  // Pengaturan tersimpan dibaca dari localStorage (selalu `null` saat SSR).
+  const saved = useSyncExternalStore(
+    subscribeSettings,
+    getStoredSettings,
+    getServerStoredSettings,
   );
-  const [wrong, setWrong] = useState(String(Math.abs(settings.wrongPoints)));
+  const base = saved ?? settings;
+
+  // Hanya simpan suntingan admin; nilainya jatuh kembali ke `base` bila kosong,
+  // sehingga pemuatan nilai tersimpan tidak perlu setState di dalam efek.
+  const [edits, setEdits] = useState<Partial<Record<FieldKey, string>>>({});
+  const [notice, setNotice] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
+
+  const cooldown = edits.cooldown ?? String(base.cooldownSeconds);
+  const correct = edits.correct ?? String(Math.abs(base.correctPoints));
+  const wrong = edits.wrong ?? String(Math.abs(base.wrongPoints));
 
   const cooldownError = validateCooldown(cooldown);
   const correctError = validatePoints(correct, "jawaban benar");
   const wrongError = validatePoints(wrong, "jawaban salah");
   const hasError = Boolean(cooldownError || correctError || wrongError);
+
+  const nextSettings: CompetitionSettings | null = hasError
+    ? null
+    : {
+        cooldownSeconds: Number(cooldown),
+        correctPoints: Number(correct),
+        wrongPoints: -Number(wrong),
+      };
+
+  const isDirty =
+    nextSettings !== null &&
+    (nextSettings.cooldownSeconds !== base.cooldownSeconds ||
+      nextSettings.correctPoints !== base.correctPoints ||
+      nextSettings.wrongPoints !== base.wrongPoints);
+
+  const setField = (key: FieldKey) => (value: string) => {
+    setEdits((prev) => ({ ...prev, [key]: value }));
+    setNotice(null);
+  };
+
+  const handleSave = () => {
+    if (!nextSettings || !isDirty) return;
+    saveSettings(nextSettings);
+    setEdits({});
+    setNotice("Pengaturan tersimpan.");
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setNotice(null), NOTICE_MS);
+  };
+
+  const handleReset = () => {
+    setEdits({});
+    setNotice(null);
+  };
 
   return (
     <main className="relative flex min-h-dvh flex-col overflow-x-clip bg-background text-foreground">
@@ -200,7 +267,7 @@ export function SettingsForm({
                 "focus-visible:border-cyan-400 focus-visible:ring-cyan-400/30",
             }}
             value={cooldown}
-            onChange={setCooldown}
+            onChange={setField("cooldown")}
             error={cooldownError}
             min={COOLDOWN.min}
             max={COOLDOWN.max}
@@ -218,7 +285,7 @@ export function SettingsForm({
                 "focus-visible:border-emerald-400 focus-visible:ring-emerald-400/30",
             }}
             value={correct}
-            onChange={setCorrect}
+            onChange={setField("correct")}
             error={correctError}
             min={0}
             max={POINTS_MAX}
@@ -236,7 +303,7 @@ export function SettingsForm({
                 "focus-visible:border-rose-400 focus-visible:ring-rose-400/30",
             }}
             value={wrong}
-            onChange={setWrong}
+            onChange={setField("wrong")}
             error={wrongError}
             min={0}
             max={POINTS_MAX}
@@ -244,12 +311,46 @@ export function SettingsForm({
           />
         </section>
 
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={!isDirty || hasError}
+            className="h-10"
+          >
+            <Save className="size-4" aria-hidden />
+            Simpan pengaturan
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleReset}
+            disabled={!isDirty}
+            className="h-10"
+          >
+            <RotateCcw className="size-4" aria-hidden />
+            Kembalikan
+          </Button>
+          <span
+            role="status"
+            aria-live="polite"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-300"
+          >
+            {notice ? (
+              <>
+                <Check className="size-4" aria-hidden />
+                {notice}
+              </>
+            ) : null}
+          </span>
+        </div>
+
         <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs leading-relaxed text-muted-foreground">
           <Info className="mt-0.5 size-4 shrink-0 text-fuchsia-300" aria-hidden />
           <span>
             {hasError
-              ? "Perbaiki isian yang ditandai sebelum pengaturan bisa dipakai."
-              : "Nilai awal ini sudah masuk akal, jadi lomba bisa langsung dimulai tanpa mengubah apa pun. Isian yang tidak wajar (mis. waktu 0 detik atau poin bukan angka) akan ditolak."}
+              ? "Perbaiki isian yang ditandai sebelum pengaturan bisa disimpan."
+              : "Nilai awal ini sudah masuk akal, jadi lomba bisa langsung dimulai tanpa mengubah apa pun. Pengaturan yang disimpan dipakai lagi saat halaman dibuka kembali."}
           </span>
         </p>
       </div>
