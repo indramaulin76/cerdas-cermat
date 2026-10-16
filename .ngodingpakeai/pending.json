@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "d312fc2d183829d2b05dcc751dfcee8a9fef5459",
+  "generatedForCommit": "8677da6acfc0f8773ba2f08211ad1196a97eea05",
   "files": [
     {
       "path": ".gitignore",
@@ -100,7 +100,7 @@
     },
     {
       "path": "drizzle/0003_normal_vision.sql",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "sql",
       "size": 153
     },
@@ -124,13 +124,13 @@
     },
     {
       "path": "drizzle/meta/0003_snapshot.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 10456
     },
     {
       "path": "drizzle/meta/_journal.json",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "json",
       "size": 628
     },
@@ -163,6 +163,12 @@
       "reason": "needs_summary",
       "language": "json",
       "size": 1061
+    },
+    {
+      "path": "src/app/api/admin/auth/route.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1979
     },
     {
       "path": "src/app/api/sessions/[sessionId]/auth/moderator/route.ts",
@@ -208,9 +214,9 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/settings/route.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 2583
+      "size": 2674
     },
     {
       "path": "src/app/api/sessions/[sessionId]/teams/[teamId]/route.ts",
@@ -406,7 +412,7 @@
     },
     {
       "path": "src/db/schema.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 5703
     },
@@ -424,9 +430,9 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 12410
+      "size": 12940
     },
     {
       "path": "src/lib/ccl/format.ts",
@@ -507,10 +513,16 @@
       "size": 24
     },
     {
-      "path": "src/server/auth.ts",
-      "reason": "needs_summary",
+      "path": "src/server/admin-auth.ts",
+      "reason": "new",
       "language": "typescript",
-      "size": 5868
+      "size": 2903
+    },
+    {
+      "path": "src/server/auth.ts",
+      "reason": "changed",
+      "language": "typescript",
+      "size": 5332
     },
     {
       "path": "src/server/buzz.ts",
@@ -559,6 +571,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 13405
+    },
+    {
+      "path": "src/server/token.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1267
     },
     {
       "path": "tsconfig.json",
