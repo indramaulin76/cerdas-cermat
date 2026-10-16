@@ -335,3 +335,13 @@ export type ViewerDataResponse = {
 export function viewerDataPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/viewer`;
 }
+
+/**
+ * Endpoint aliran realtime (SSE) khusus layar penonton.
+ *
+ * Sama seperti kanal umum `/events`, tetapi hanya bisa diakses penonton yang
+ * sudah lolos PIN sesi.
+ */
+export function viewerEventsPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/viewer/events`;
+}
