@@ -108,6 +108,8 @@ export type SessionEvent =
     }
   /** Moderator mengosongkan ronde: urutan & kunci kembali bersih. */
   | { type: "round.reset"; at: string; roundId: string | null }
+  /** Skor sebuah regu berubah: papan skor & penonton ikut diperbarui. */
+  | { type: "score.updated"; at: string; team: TeamDto; delta: number }
   /** Denyut koneksi agar aliran tidak diputus oleh proxy. */
   | { type: "ping"; at: string };
 
@@ -193,4 +195,49 @@ export function teamStatusPath(sessionId: string, teamId: string): string {
   return `/api/sessions/${encodeURIComponent(
     sessionId,
   )}/teams/${encodeURIComponent(teamId)}/status`;
+}
+
+/** Bentuk regu untuk dikirim ke klien (termasuk skor terkini). */
+export type TeamDto = {
+  id: string;
+  sessionId: string;
+  name: string;
+  /** Warna identitas regu (hex). */
+  color: string;
+  score: number;
+  createdAt: string;
+};
+
+/** Balasan daftar regu sebuah sesi. */
+export type TeamsResponse = {
+  ok: true;
+  teams: TeamDto[];
+};
+
+/** Permintaan mengubah skor regu. */
+export type UpdateScoreRequest = {
+  /** Tambah/kurang poin secara langsung (mis. +100 atau -50). */
+  delta?: number;
+  /** Atau pakai aturan sesi: "correct" = correctPoints, "wrong" = wrongPoints. */
+  outcome?: "correct" | "wrong";
+};
+
+/** Balasan pembaruan skor regu. */
+export type UpdateScoreResponse = {
+  ok: true;
+  team: TeamDto;
+  /** Poin yang benar-benar diterapkan. */
+  delta: number;
+};
+
+/** Endpoint daftar regu sebuah sesi. */
+export function teamsPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/teams`;
+}
+
+/** Endpoint tambah/kurang poin regu. */
+export function scorePath(sessionId: string, teamId: string): string {
+  return `/api/sessions/${encodeURIComponent(
+    sessionId,
+  )}/teams/${encodeURIComponent(teamId)}/score`;
 }
