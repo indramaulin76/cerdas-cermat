@@ -5,6 +5,8 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CalendarDays,
+  Check,
+  Copy,
   KeyRound,
   LayoutDashboard,
   MonitorPlay,
@@ -14,11 +16,13 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatSessionDate } from "@/lib/ccl/format";
 import {
   SESSION_STATUS_CLASS,
   SESSION_STATUS_LABEL,
 } from "@/lib/ccl/session-status";
+import { type CopyFeedback, useCopyToClipboard } from "@/lib/ccl/use-copy";
 import {
   getCreatedSession,
   subscribeCreatedSessions,
@@ -79,16 +83,59 @@ const ROLE_STYLE: Record<
   },
 };
 
+/** Tombol ikon untuk menyalin satu nilai (link atau PIN). */
+function CopyIconButton({
+  label,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={label}
+      title={label}
+      onClick={onCopy}
+      className={copied ? "text-emerald-300" : "text-muted-foreground"}
+    >
+      {copied ? (
+        <Check className="size-3.5" aria-hidden />
+      ) : (
+        <Copy className="size-3.5" aria-hidden />
+      )}
+    </Button>
+  );
+}
+
 function RoleCard({
   role,
   origin,
+  copy,
+  feedback,
 }: {
   role: SessionDetailData["roles"][number];
   origin: string;
+  copy: (text: string, key: string) => void;
+  feedback: CopyFeedback | null;
 }) {
   const style = ROLE_STYLE[role.role];
   const Icon = style.icon;
   const url = origin ? `${origin}${role.path}` : role.path;
+
+  const linkKey = `${role.role}:link`;
+  const pinKey = `${role.role}:pin`;
+  const allKey = `${role.role}:all`;
+
+  const linkCopied = feedback?.key === linkKey && feedback.status === "copied";
+  const pinCopied = feedback?.key === pinKey && feedback.status === "copied";
+  const allState = feedback?.key === allKey ? feedback.status : null;
+
+  const combined = `${role.label}\nLink: ${url}\nPIN: ${role.pin}`;
 
   return (
     <div
@@ -112,9 +159,16 @@ function RoleCard({
         <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Link
         </span>
-        <p className="break-all rounded-lg border border-white/10 bg-black/25 px-2.5 py-2 font-mono text-xs text-foreground/90">
-          {url}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className="min-w-0 flex-1 break-all rounded-lg border border-white/10 bg-black/25 px-2.5 py-2 font-mono text-xs text-foreground/90">
+            {url}
+          </p>
+          <CopyIconButton
+            label={`Salin link ${role.label}`}
+            copied={linkCopied}
+            onCopy={() => copy(url, linkKey)}
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">
@@ -122,10 +176,39 @@ function RoleCard({
           <KeyRound className="size-3.5" aria-hidden />
           PIN
         </span>
-        <p className="font-mono text-3xl font-black tracking-[0.35em]">
-          {role.pin}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-mono text-3xl font-black tracking-[0.35em]">
+            {role.pin}
+          </p>
+          <CopyIconButton
+            label={`Salin PIN ${role.label}`}
+            copied={pinCopied}
+            onCopy={() => copy(role.pin, pinKey)}
+          />
+        </div>
       </div>
+
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="mt-auto w-full"
+        onClick={() => copy(combined, allKey)}
+      >
+        {allState === "copied" ? (
+          <>
+            <Check className="size-3.5" aria-hidden />
+            Tersalin
+          </>
+        ) : allState === "error" ? (
+          <>Gagal menyalin</>
+        ) : (
+          <>
+            <Copy className="size-3.5" aria-hidden />
+            Salin link &amp; PIN
+          </>
+        )}
+      </Button>
     </div>
   );
 }
@@ -139,6 +222,7 @@ export function SessionDetail({
 }) {
   const origin = useOrigin();
   const isClient = useIsClient();
+  const { copy, feedback } = useCopyToClipboard();
   // Sesi buatan admin hanya ada di localStorage; baca dengan aman saat hidrasi.
   const stored = useSyncExternalStore(
     subscribeCreatedSessions,
@@ -219,9 +303,24 @@ export function SessionDetail({
               className="grid gap-4 md:grid-cols-3"
             >
               {detail.roles.map((role) => (
-                <RoleCard key={role.role} role={role} origin={origin} />
+                <RoleCard
+                  key={role.role}
+                  role={role}
+                  origin={origin}
+                  copy={copy}
+                  feedback={feedback}
+                />
               ))}
             </section>
+
+            {/* Konfirmasi salin untuk pembaca layar. */}
+            <p aria-live="polite" className="sr-only">
+              {feedback
+                ? feedback.status === "copied"
+                  ? "Tersalin ke papan klip."
+                  : "Gagal menyalin."
+                : ""}
+            </p>
           </>
         )}
       </div>

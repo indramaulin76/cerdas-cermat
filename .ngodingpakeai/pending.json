@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "e162b418aaefe7c40624c2f842e05e275d58a457",
+  "generatedForCommit": "54746ce0118d96eff54608336f4ccaa7709a4842",
   "files": [
     {
       "path": ".gitignore",
@@ -279,16 +279,28 @@
       "size": 1523
     },
     {
-      "path": "src/app/sesi/page.tsx",
-      "reason": "needs_summary",
+      "path": "src/app/sesi/[sessionId]/page.tsx",
+      "reason": "new",
       "language": "typescript",
-      "size": 571
+      "size": 1377
+    },
+    {
+      "path": "src/app/sesi/page.tsx",
+      "reason": "changed",
+      "language": "typescript",
+      "size": 523
+    },
+    {
+      "path": "src/components/admin/session-detail.tsx",
+      "reason": "new",
+      "language": "typescript",
+      "size": 7273
     },
     {
       "path": "src/components/admin/session-list.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 9072
+      "size": 8770
     },
     {
       "path": "src/components/admin/team-manager.tsx",
@@ -393,6 +405,18 @@
       "size": 12410
     },
     {
+      "path": "src/lib/ccl/format.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 426
+    },
+    {
+      "path": "src/lib/ccl/session-status.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 641
+    },
+    {
       "path": "src/lib/ccl/team-colors.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -411,6 +435,12 @@
       "size": 2958
     },
     {
+      "path": "src/lib/mock/session-store.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3540
+    },
+    {
       "path": "src/lib/mock/session.ts",
       "reason": "needs_summary",
       "language": "typescript",
@@ -418,9 +448,9 @@
     },
     {
       "path": "src/lib/mock/sessions.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 1048
+      "size": 3690
     },
     {
       "path": "src/lib/utils.ts",
