@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { ViewerScreen } from "@/components/viewer/viewer-screen";
-import { getMockSession } from "@/lib/mock/session";
+import { ViewerApp } from "@/components/viewer/viewer-app";
+import { getMockSession, MOCK_VIEWER_PIN } from "@/lib/mock/session";
 
 export const metadata: Metadata = {
   title: "Layar Penonton — Cerdas Cermat Live",
@@ -12,11 +12,11 @@ export const metadata: Metadata = {
 /**
  * Layar penonton (biasanya dibuka di proyektor ruangan).
  *
- * Tahap ini memakai data tiruan; gerbang PIN, siaran realtime, dan sorotan
- * regu tercepat ditambahkan pada tugas-tugas berikutnya.
+ * Dilindungi gerbang PIN. Tahap ini memakai data tiruan & PIN tiruan; validasi
+ * PIN di server serta siaran realtime menyusul pada tugas berikutnya.
  */
 export default function PenontonPage() {
   const session = getMockSession();
 
-  return <ViewerScreen session={session} />;
+  return <ViewerApp session={session} expectedPin={MOCK_VIEWER_PIN} />;
 }

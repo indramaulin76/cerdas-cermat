@@ -46,3 +46,12 @@ export function getMockTeam(teamId?: string | null): Team {
 export function getMockRival(teamId: string): Team {
   return MOCK_TEAMS.find((team) => team.id !== teamId) ?? MOCK_TEAMS[0];
 }
+
+/**
+ * PIN tiruan untuk membuka Layar Penonton.
+ *
+ * Pada tahap frontend ini PIN dibandingkan di sisi klien. Nanti validasi
+ * dipindah ke server (endpoint PIN layar penonton) supaya PIN asli tidak
+ * pernah dikirim ke perangkat penonton.
+ */
+export const MOCK_VIEWER_PIN = "1234";
