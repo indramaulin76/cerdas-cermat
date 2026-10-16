@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "21b99cd2f90933f67a6ff2925e3d1169921e1e22",
+  "generatedForCommit": "9d20226a88ed248202e9b6b555ae6b37bfe675fc",
   "files": [
     {
       "path": ".gitignore",
@@ -256,7 +256,7 @@
     },
     {
       "path": "src/app/moderator/page.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 732
     },
@@ -268,13 +268,13 @@
     },
     {
       "path": "src/app/penonton/page.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 864
     },
     {
       "path": "src/app/regu/page.tsx",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1698
     },
@@ -294,7 +294,7 @@
       "path": "src/components/admin/session-detail.tsx",
       "reason": "changed",
       "language": "typescript",
-      "size": 9716
+      "size": 10226
     },
     {
       "path": "src/components/admin/session-list.tsx",
@@ -310,13 +310,13 @@
     },
     {
       "path": "src/components/auth/role-gate.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3760
     },
     {
       "path": "src/components/auth/role-pin-gate.tsx",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 5396
     },
@@ -412,7 +412,7 @@
     },
     {
       "path": "src/lib/ccl/roles.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3301
     },
@@ -454,13 +454,13 @@
     },
     {
       "path": "src/lib/mock/session.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 1732
     },
     {
       "path": "src/lib/mock/sessions.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2322
     },

@@ -7,6 +7,7 @@
  */
 
 import type { Session, Team } from "@/lib/ccl/types";
+import type { CompetitionSettings } from "@/lib/ccl/settings";
 
 /** Daftar regu tiruan (maks. 10 sesuai PRD). */
 export const MOCK_TEAMS: Team[] = [
@@ -45,4 +46,18 @@ export function getMockTeam(teamId?: string | null): Team {
 /** Ambil regu lawan pertama (untuk mensimulasikan "regu lain lebih dulu"). */
 export function getMockRival(teamId: string): Team {
   return MOCK_TEAMS.find((team) => team.id !== teamId) ?? MOCK_TEAMS[0];
+}
+
+/**
+ * Ambil pengaturan lomba tiruan (waktu menjawab & nilai poin).
+ *
+ * Diambil dari sesi aktif supaya halaman pengaturan dan jalannya lomba memakai
+ * nilai yang sama. Backend nanti membaca pengaturan tersimpan per sesi.
+ */
+export function getMockSettings(): CompetitionSettings {
+  return {
+    cooldownSeconds: MOCK_SESSION.cooldownSeconds,
+    correctPoints: MOCK_SESSION.correctPoints,
+    wrongPoints: MOCK_SESSION.wrongPoints,
+  };
 }
