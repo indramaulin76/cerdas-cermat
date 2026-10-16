@@ -11,19 +11,12 @@
 
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 
 import { db } from "@/db";
 import { sessions } from "@/db/schema";
-
-/**
- * Rahasia penandatangan cookie. Setel `CCL_AUTH_SECRET` di produksi; nilai
- * bawaan hanya untuk pengembangan lokal.
- */
-const AUTH_SECRET = process.env.CCL_AUTH_SECRET ?? "ccl-dev-insecure-secret";
+import { safeEqual, signValue } from "@/server/token";
 
 /** Umur cookie moderator: 12 jam (cukup untuk satu acara). */
 export const MODERATOR_COOKIE_MAX_AGE = 60 * 60 * 12;
@@ -33,20 +26,9 @@ export function moderatorCookieName(sessionId: string): string {
   return `ccl_moderator_${sessionId}`;
 }
 
-function sign(value: string): string {
-  return createHmac("sha256", AUTH_SECRET).update(value).digest("hex");
-}
-
-function safeEqual(a: string, b: string): boolean {
-  const bufferA = Buffer.from(a);
-  const bufferB = Buffer.from(b);
-  if (bufferA.length !== bufferB.length) return false;
-  return timingSafeEqual(bufferA, bufferB);
-}
-
 /** Buat token bertanda tangan untuk moderator sebuah sesi. */
 export function createModeratorToken(sessionId: string): string {
-  return sign(`moderator:${sessionId}`);
+  return signValue(`moderator:${sessionId}`);
 }
 
 /** Verifikasi token moderator sebuah sesi. */
@@ -138,7 +120,7 @@ export function viewerCookieName(sessionId: string): string {
 
 /** Buat token bertanda tangan untuk penonton sebuah sesi. */
 export function createViewerToken(sessionId: string): string {
-  return sign(`viewer:${sessionId}`);
+  return signValue(`viewer:${sessionId}`);
 }
 
 /** Verifikasi token penonton sebuah sesi. */

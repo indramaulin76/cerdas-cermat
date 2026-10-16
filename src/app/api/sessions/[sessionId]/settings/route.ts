@@ -5,7 +5,7 @@ import type {
   UpdateSettingsRequest,
   UpdateSettingsResponse,
 } from "@/lib/ccl/api";
-import { requireModerator } from "@/server/auth";
+import { requireModeratorOrAdmin } from "@/server/admin-auth";
 import { publish } from "@/server/events";
 import { toSessionDto, updateSessionSettings } from "@/server/session";
 
@@ -19,13 +19,14 @@ function errorResponse(error: string, message: string, status: number) {
 }
 
 /**
- * Ubah pengaturan sesi: cooldown (waktu jawab) & poin (moderator).
+ * Ubah pengaturan sesi: cooldown (waktu jawab) & poin (panitia/moderator).
  *
  * `PATCH /api/sessions/[sessionId]/settings`
  * Body: `{ cooldownSeconds?, correctPoints?, wrongPoints? }`
  *
- * Perubahan disiarkan lewat SSE (`session.updated`) supaya aba-aba regu dan
- * papan skor ikut menyesuaikan.
+ * Boleh diakses panitia yang sudah masuk atau moderator sesi. Perubahan
+ * disiarkan lewat SSE (`session.updated`) supaya aba-aba regu dan papan skor
+ * ikut menyesuaikan.
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { sessionId } = await params;
@@ -34,7 +35,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return errorResponse("invalid_session", "Session id wajib diisi.", 400);
   }
 
-  const gate = await requireModerator(sessionId);
+  const gate = await requireModeratorOrAdmin(sessionId);
   if (!gate.ok) {
     return errorResponse(gate.error, gate.message, gate.status);
   }

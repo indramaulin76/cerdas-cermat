@@ -213,6 +213,25 @@ export function viewerAuthPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/auth/viewer`;
 }
 
+/* ------------------------------ Panitia (Admin) ------------------------------ */
+
+/** Permintaan masuk sebagai panitia (admin) memakai kata sandi bersama. */
+export type AdminLoginRequest = {
+  password: string;
+};
+
+/** Balasan endpoint auth panitia. */
+export type AdminAuthResponse = {
+  ok: true;
+  /** `true` bila permintaan ini sudah masuk sebagai panitia. */
+  authenticated: boolean;
+};
+
+/** Endpoint autentikasi panitia (masuk/status/keluar). */
+export function adminAuthPath(): string {
+  return `/api/admin/auth`;
+}
+
 /** Fase soal yang sedang berjalan. */
 export type QuestionPhase =
   /** Belum ada soal yang dibuka. */
