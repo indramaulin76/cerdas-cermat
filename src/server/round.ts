@@ -2,10 +2,10 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { buzzEvents, rounds, type RoundRow } from "@/db/schema";
+import { rounds, type RoundRow } from "@/db/schema";
 import type { RoundDto } from "@/lib/ccl/api";
 
 export type OpenRoundInput = {
@@ -33,6 +33,15 @@ export function openRound(input: OpenRoundInput): OpenRoundOutcome {
   const { sessionId } = input;
 
   return db.transaction((tx) => {
+    const now = new Date();
+
+    // Tutup ronde yang masih terbuka supaya hanya ada satu soal aktif.
+    // Inilah "reset kunci": membuka soal baru membuka kembali kunci semua regu.
+    tx.update(rounds)
+      .set({ status: "closed", endedAt: now })
+      .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
+      .run();
+
     const lastRound = tx
       .select()
       .from(rounds)
@@ -41,7 +50,6 @@ export function openRound(input: OpenRoundInput): OpenRoundOutcome {
       .get();
 
     const orderNumber = lastRound ? lastRound.orderNumber + 1 : 1;
-    const now = new Date();
 
     const row: RoundRow = {
       id: randomUUID(),

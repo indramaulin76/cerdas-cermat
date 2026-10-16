@@ -11,11 +11,12 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
   buzzEvents,
+  rounds,
   teams,
   type BuzzEventRow,
 } from "@/db/schema";
@@ -52,7 +53,6 @@ function roundScope(roundId: string | null) {
  */
 export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
   const { sessionId, teamId } = input;
-  const roundId = input.roundId ?? null;
   const reactionMs = Math.max(0, Math.round(input.reactionMs));
 
   return db.transaction((tx) => {
@@ -64,6 +64,19 @@ export function recordBuzz(input: RecordBuzzInput): RecordBuzzOutcome {
 
     if (!team) {
       return { status: "unknown_team", teamId } as const;
+    }
+
+    // Bila klien tidak menyebut ronde, pakai soal yang sedang terbuka supaya
+    // tekanan otomatis terhubung ke ronde yang benar.
+    let roundId = input.roundId ?? null;
+    if (roundId === null) {
+      const openRound = tx
+        .select({ id: rounds.id })
+        .from(rounds)
+        .where(and(eq(rounds.sessionId, sessionId), eq(rounds.status, "open")))
+        .orderBy(desc(rounds.orderNumber), desc(rounds.createdAt))
+        .get();
+      roundId = openRound?.id ?? null;
     }
 
     const scope = and(
