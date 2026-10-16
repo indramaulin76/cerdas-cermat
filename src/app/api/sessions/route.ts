@@ -4,9 +4,14 @@ import type {
   ApiErrorResponse,
   CreateSessionRequest,
   CreateSessionResponse,
+  SessionsListResponse,
 } from "@/lib/ccl/api";
 import { requireAdmin } from "@/server/admin-auth";
-import { createSession, toSessionDetailDto } from "@/server/session";
+import {
+  createSession,
+  listSessions,
+  toSessionDetailDto,
+} from "@/server/session";
 
 /** Panjang maksimum nama acara. */
 const TITLE_MAX = 80;
@@ -63,4 +68,22 @@ export async function POST(request: NextRequest) {
   const session = toSessionDetailDto(createSession({ title: trimmed }));
   const response: CreateSessionResponse = { ok: true, session };
   return NextResponse.json(response, { status: 201 });
+}
+
+/**
+ * Daftar sesi milik panitia.
+ *
+ * `GET /api/sessions`
+ *
+ * Hanya panitia (admin) yang sudah masuk. Diurutkan dari yang terbaru, lengkap
+ * dengan jumlah regu supaya admin bisa membedakan sesi dalam satu tampilan.
+ */
+export async function GET() {
+  const gate = await requireAdmin();
+  if (!gate.ok) {
+    return errorResponse(gate.error, gate.message, gate.status);
+  }
+
+  const response: SessionsListResponse = { ok: true, sessions: listSessions() };
+  return NextResponse.json(response);
 }

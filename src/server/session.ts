@@ -8,11 +8,20 @@
 
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { sessions, type NewSessionRow, type SessionRow } from "@/db/schema";
-import type { SessionDetailDto, SessionDto } from "@/lib/ccl/api";
+import {
+  sessions,
+  teams,
+  type NewSessionRow,
+  type SessionRow,
+} from "@/db/schema";
+import type {
+  SessionDetailDto,
+  SessionDto,
+  SessionSummaryDto,
+} from "@/lib/ccl/api";
 import { generateRolePins, generateSessionId, sessionLinks } from "@/server/session-code";
 
 /** Ubah baris sesi menjadi DTO untuk dikirim ke klien. */
@@ -42,6 +51,31 @@ export function toSessionDetailDto(row: SessionRow): SessionDetailDto {
       team: row.teamPin ?? "",
     },
   };
+}
+
+/** Ambil semua sesi, terbaru lebih dulu, beserta jumlah regu peserta. */
+export function listSessions(): SessionSummaryDto[] {
+  const rows = db
+    .select({
+      id: sessions.id,
+      title: sessions.title,
+      status: sessions.status,
+      createdAt: sessions.createdAt,
+      teamCount: count(teams.id),
+    })
+    .from(sessions)
+    .leftJoin(teams, eq(teams.sessionId, sessions.id))
+    .groupBy(sessions.id)
+    .orderBy(desc(sessions.createdAt))
+    .all();
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    status: row.status as "draft" | "active" | "finished",
+    createdAt: row.createdAt.toISOString(),
+    teamCount: Number(row.teamCount),
+  }));
 }
 
 /** Ambil satu sesi, atau `undefined` bila tak ada. */

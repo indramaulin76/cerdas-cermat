@@ -422,9 +422,37 @@ export type CreateSessionResponse = {
   session: SessionDetailDto;
 };
 
+/** Ringkasan sesi untuk daftar sesi di halaman admin. */
+export type SessionSummaryDto = {
+  id: string;
+  title: string;
+  status: "draft" | "active" | "finished";
+  /** Waktu dibuat (ISO-8601). */
+  createdAt: string;
+  /** Jumlah regu peserta pada sesi ini. */
+  teamCount: number;
+};
+
+/** Balasan daftar sesi. */
+export type SessionsListResponse = {
+  ok: true;
+  sessions: SessionSummaryDto[];
+};
+
+/** Balasan detail satu sesi. */
+export type SessionDetailResponse = {
+  ok: true;
+  session: SessionDetailDto;
+};
+
 /** Endpoint kumpulan sesi (buat/daftar sesi). */
 export function sessionsPath(): string {
   return `/api/sessions`;
+}
+
+/** Endpoint detail satu sesi. */
+export function sessionDetailPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}`;
 }
 
 /** Permintaan mengubah pengaturan sesi. */
