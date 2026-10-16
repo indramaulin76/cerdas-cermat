@@ -205,10 +205,9 @@ export function roleAuthPath(sessionId: string, role: RoleId): string {
 
 /* ------------------------------ Panitia (Admin) ------------------------------ */
 
-/** Permintaan masuk sebagai panitia (admin) memakai kata sandi bersama. */
+/** Permintaan masuk sebagai panitia (admin) memakai PIN. */
 export type AdminLoginRequest = {
-  email: string;
-  password: string;
+  pin: string;
 };
 
 /** Balasan endpoint auth panitia. */

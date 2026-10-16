@@ -1,8 +1,8 @@
 /**
  * Autentikasi akun panitia untuk mengelola sesi lomba.
  *
- * `CCL_ADMIN_EMAIL` dan `CCL_ADMIN_PASSWORD` menyediakan akun bootstrap;
- * akun tambahan disimpan di PostgreSQL dengan hash scrypt.
+ * `CCL_ADMIN_PIN` menyediakan akses bootstrap; akun tambahan disimpan di
+ * PostgreSQL dengan hash scrypt.
  */
 
 import "server-only";
@@ -25,21 +25,17 @@ import type { RoleId } from "@/lib/ccl/roles";
 
 const BOOTSTRAP_ID = "bootstrap-admin";
 
-function getBootstrapCredentials() {
+function getBootstrapEmail(): string {
   const configuredEmail = process.env.CCL_ADMIN_EMAIL;
-  const configuredPassword = process.env.CCL_ADMIN_PASSWORD;
-  if (
-    process.env.NODE_ENV === "production" &&
-    (!configuredEmail?.trim() || !configuredPassword)
-  ) {
-    throw new Error(
-      "CCL_ADMIN_EMAIL dan CCL_ADMIN_PASSWORD wajib diatur di lingkungan produksi.",
-    );
+  return (configuredEmail ?? "admin@ccl.local").trim().toLowerCase();
+}
+
+function getBootstrapPin(): string {
+  const pin = process.env.CCL_ADMIN_PIN;
+  if (!pin || !/^\d{4}$/.test(pin)) {
+    throw new Error("CCL_ADMIN_PIN wajib diatur sebagai PIN 4 digit.");
   }
-  return {
-    email: (configuredEmail ?? "admin@ccl.local").trim().toLowerCase(),
-    password: configuredPassword ?? "panitia",
-  };
+  return pin;
 }
 
 export const ADMIN_COOKIE_NAME = "ccl_admin";
@@ -84,59 +80,20 @@ export function verifyAdminToken(token: string): string | null {
   return safeEqual(signature, tokenSignature(id)) ? id : null;
 }
 
-function parsePasswordHash(encoded: string): { salt: Buffer; hash: Buffer } | null {
-  const [algorithm, saltHex, hashHex] = encoded.split("$");
-  if (algorithm !== "scrypt" || !saltHex || !hashHex) return null;
-  if (!/^[0-9a-f]+$/i.test(saltHex) || !/^[0-9a-f]+$/i.test(hashHex)) {
-    return null;
-  }
-  return { salt: Buffer.from(saltHex, "hex"), hash: Buffer.from(hashHex, "hex") };
-}
-
 export function hashAdminPassword(password: string): string {
   const salt = randomBytes(16);
   const hash = scryptSync(password, salt, 64);
   return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
 }
 
-function verifyPasswordHash(password: string, encoded: string): boolean {
-  const parsed = parsePasswordHash(encoded);
-  if (!parsed) return false;
-  const candidate = scryptSync(password, parsed.salt, parsed.hash.length);
-  return safeEqual(candidate.toString("hex"), parsed.hash.toString("hex"));
-}
-
-export function verifyAdminPassword(password: string): boolean {
-  return safeEqualSecret(password, getBootstrapCredentials().password);
-}
-
-export async function verifyAdminCredentials(
-  email: string,
-  password: string,
-): Promise<AdminIdentity | null> {
-  const normalizedEmail = email.trim().toLowerCase();
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, normalizedEmail))
-    .limit(1);
-
-  if (row) {
-    return verifyPasswordHash(password, row.passwordHash) ? toIdentity(row) : null;
-  }
-
-  if (
-    normalizedEmail === getBootstrapCredentials().email &&
-    verifyAdminPassword(password)
-  ) {
-    return {
-      id: BOOTSTRAP_ID,
-      name: "Admin",
-      email: getBootstrapCredentials().email,
-      role: "admin",
-    };
-  }
-  return null;
+export function verifyAdminPin(pin: string): AdminIdentity | null {
+  if (!safeEqualSecret(pin, getBootstrapPin())) return null;
+  return {
+    id: BOOTSTRAP_ID,
+    name: "Admin",
+    email: getBootstrapEmail(),
+    role: "admin",
+  };
 }
 
 export async function getCurrentAdmin(): Promise<AdminIdentity | null> {
@@ -146,11 +103,10 @@ export async function getCurrentAdmin(): Promise<AdminIdentity | null> {
   const id = verifyAdminToken(token);
   if (!id) return null;
   if (id === BOOTSTRAP_ID) {
-    const { email } = getBootstrapCredentials();
     return {
       id: BOOTSTRAP_ID,
       name: "Admin",
-      email,
+      email: getBootstrapEmail(),
       role: "admin",
     };
   }

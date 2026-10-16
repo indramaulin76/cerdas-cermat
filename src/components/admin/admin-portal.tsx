@@ -10,8 +10,7 @@ type Admin = { id: string; name: string; email: string; role: "admin" | "panitia
 export function AdminPortal() {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState("admin@ccl.local");
-  const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -47,17 +46,17 @@ export function AdminPortal() {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ pin }),
       });
       const result = (await response.json()) as {
         admin?: Admin;
         message?: string;
       };
       if (!response.ok || !result.admin) {
-        throw new Error(result.message ?? "Email atau kata sandi salah.");
+        throw new Error(result.message ?? "PIN salah.");
       }
       setAdmin(result.admin);
-      setPassword("");
+      setPin("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Gagal masuk.");
     } finally {
@@ -96,37 +95,31 @@ export function AdminPortal() {
             <p className="mt-2 text-sm text-muted-foreground">Masuk untuk mengelola sesi dan pengaturan lomba.</p>
           </header>
           <label className="block space-y-1.5 text-sm font-medium">
-            <span>Email</span>
-            <input
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400/60"
-            />
-          </label>
-          <label className="block space-y-1.5 text-sm font-medium">
-            <span>Kata sandi</span>
+            <span>PIN panitia</span>
             <input
               type="password"
-              autoComplete="current-password"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{4}"
+              maxLength={4}
               required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              value={pin}
+              onChange={(event) =>
+                setPin(event.target.value.replace(/\D/g, "").slice(0, 4))
+              }
               className="h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400/60"
             />
           </label>
           {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
           <button
             type="submit"
-            disabled={busy || !email || !password}
+            disabled={busy || pin.length !== 4}
             className="h-11 w-full rounded-xl bg-foreground font-bold text-background disabled:opacity-50"
           >
             {busy ? "Memeriksa…" : "Masuk"}
           </button>
           <p className="text-center text-xs text-muted-foreground">
-            Akun awal dikonfigurasi melalui <code>CCL_ADMIN_EMAIL</code> dan <code>CCL_ADMIN_PASSWORD</code>.
+            Masuk menggunakan PIN panitia 4 digit.
           </p>
         </form>
       </main>

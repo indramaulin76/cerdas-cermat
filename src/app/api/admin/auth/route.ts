@@ -10,7 +10,8 @@ import {
   adminCookieOptions,
   createAdminToken,
   getCurrentAdmin,
-  verifyAdminCredentials,
+  verifyAdminPin,
+  type AdminIdentity,
 } from "@/server/admin-auth";
 
 function errorResponse(error: string, message: string, status: number) {
@@ -31,7 +32,7 @@ export async function GET() {
   return NextResponse.json(response);
 }
 
-/** Masuk sebagai panitia dengan kata sandi bersama. */
+/** Masuk sebagai panitia dengan PIN bootstrap. */
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -44,28 +45,28 @@ export async function POST(request: NextRequest) {
     return errorResponse("invalid_body", "Body permintaan tidak valid.", 400);
   }
 
-  const { email, password } = body as Partial<AdminLoginRequest>;
+  const pin = (body as Partial<AdminLoginRequest>).pin;
 
-  if (
-    typeof email !== "string" ||
-    email.trim() === "" ||
-    typeof password !== "string" ||
-    password === ""
-  ) {
+  if (typeof pin !== "string" || !/^\d{4}$/.test(pin)) {
     return errorResponse(
       "invalid_credentials",
-      "Email dan kata sandi wajib diisi.",
+      "PIN harus terdiri dari 4 angka.",
       400,
     );
   }
 
-  const admin = await verifyAdminCredentials(email, password);
+  let admin: AdminIdentity | null;
+  try {
+    admin = verifyAdminPin(pin);
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Konfigurasi login belum lengkap.";
+    return errorResponse("login_not_configured", message, 503);
+  }
   if (!admin) {
-    return errorResponse(
-      "invalid_credentials",
-      "Email atau kata sandi salah.",
-      401,
-    );
+    return errorResponse("invalid_credentials", "PIN salah.", 401);
   }
 
   const response: AdminAuthResponse = {

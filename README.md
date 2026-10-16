@@ -16,9 +16,9 @@ npm run db:migrate
 npm run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000). Kredensial admin bootstrap
-ditentukan oleh `CCL_ADMIN_EMAIL` dan `CCL_ADMIN_PASSWORD`; atur kata sandi
-yang kuat bahkan untuk penggunaan lokal.
+Buka [http://localhost:3000](http://localhost:3000). Login panitia memakai PIN
+empat digit dari `CCL_ADMIN_PIN`. Tetapkan PIN tersebut di environment lokal
+dan deployment.
 
 ## Konfigurasi
 
@@ -28,15 +28,14 @@ Variabel lingkungan berikut dapat disetel:
 | --- | --- | --- |
 | `DATABASE_URL` | Connection string PostgreSQL/Neon | Wajib |
 | `ABLY_API_KEY` | API key server Ably; tidak pernah dikirim ke browser | Wajib |
-| `CCL_ADMIN_EMAIL` | Email akun admin bootstrap | Wajib di produksi |
-| `CCL_ADMIN_PASSWORD` | Kata sandi akun admin bootstrap | Wajib di produksi |
+| `CCL_ADMIN_EMAIL` | Email tampilan admin bootstrap | Opsional |
+| `CCL_ADMIN_PIN` | PIN empat digit untuk login admin bootstrap | Wajib |
 | `CCL_AUTH_SECRET` | Rahasia HMAC untuk cookie login | Wajib di produksi |
 
-Untuk produksi, wajib set `CCL_ADMIN_EMAIL`, `CCL_ADMIN_PASSWORD`, dan
-`CCL_AUTH_SECRET`; aplikasi menolak autentikasi bootstrap/token bila
-konfigurasinya tidak tersedia. Gunakan kata sandi yang kuat serta rahasia
-acak yang panjang (minimal 32 byte), dan simpan nilainya melalui pengelola
-rahasia lingkungan deployment, bukan di repositori.
+Untuk produksi, wajib set `CCL_ADMIN_PIN` dan `CCL_AUTH_SECRET`; aplikasi menolak
+autentikasi bootstrap/token bila konfigurasinya tidak tersedia. Gunakan PIN
+empat digit dan rahasia acak yang panjang (minimal 32 byte), lalu simpan nilainya
+melalui pengelola rahasia environment deployment, bukan di repositori.
 
 Contoh membuat rahasia secara lokal:
 
@@ -75,8 +74,8 @@ npm run build
 
 ## Catatan deployment
 
-Untuk Vercel, atur `DATABASE_URL`, `ABLY_API_KEY`, `CCL_ADMIN_EMAIL`,
-`CCL_ADMIN_PASSWORD`, dan `CCL_AUTH_SECRET` pada environment project. Terapkan
+Untuk Vercel, atur `DATABASE_URL`, `ABLY_API_KEY`, `CCL_ADMIN_PIN`, dan
+`CCL_AUTH_SECRET` pada environment project. Terapkan
 migrasi PostgreSQL sebelum deployment. API key Ably hanya dipakai di server;
 klien menerima token berumur terbatas yang hanya dapat subscribe ke kanal sesi
 dan audiensnya. Live (moderator/regu) dan penonton memakai kanal terpisah.
