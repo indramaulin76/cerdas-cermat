@@ -19,8 +19,13 @@ import * as schema from "./schema";
 const databaseUrl = process.env.DATABASE_URL ?? "./data/ccl.db";
 
 // Pastikan folder penampung ada sebelum better-sqlite3 membuka berkasnya.
-if (databaseUrl !== ":memory:" && !existsSync(databaseUrl)) {
-  mkdirSync(dirname(databaseUrl), { recursive: true });
+if (
+  databaseUrl !== ":memory:" &&
+  !existsSync(/* turbopackIgnore: true */ databaseUrl)
+) {
+  mkdirSync(/* turbopackIgnore: true */ dirname(databaseUrl), {
+    recursive: true,
+  });
 }
 
 const sqlite = new Database(databaseUrl);

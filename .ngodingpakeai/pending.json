@@ -1,12 +1,12 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "1667352cb0ad80506c3ca8ab8d1c3f0019e0e03c",
+  "generatedForCommit": "4e8a540f1c0c804bb137a6dd0dfdcfc52d3aca49",
   "files": [
     {
       "path": ".gitignore",
       "reason": "changed",
       "language": null,
-      "size": 577
+      "size": 665
     },
     {
       "path": ".ngodingpakeaiignore",
@@ -28,49 +28,49 @@
     },
     {
       "path": "cerdas-cermat-live/PRD.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 9884
     },
     {
       "path": "cerdas-cermat-live/features/01-tombol-jawab-regu.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 3491
     },
     {
       "path": "cerdas-cermat-live/features/02-dashboard-moderator.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 3907
     },
     {
       "path": "cerdas-cermat-live/features/03-layar-penonton.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 2966
     },
     {
       "path": "cerdas-cermat-live/features/04-kelola-regu.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 2743
     },
     {
       "path": "cerdas-cermat-live/features/05-sesi-link.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 3281
     },
     {
       "path": "cerdas-cermat-live/features/06-pengaturan-lomba.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 2560
     },
     {
       "path": "cerdas-cermat-live/features/07-login-admin.md",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "markdown",
       "size": 2452
     },
@@ -82,25 +82,25 @@
     },
     {
       "path": "drizzle/0000_unique_switch.sql",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "sql",
       "size": 1212
     },
     {
       "path": "drizzle/meta/0000_snapshot.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 4722
     },
     {
       "path": "drizzle/meta/_journal.json",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "json",
       "size": 203
     },
     {
       "path": "drizzle.config.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 526
     },
@@ -112,21 +112,27 @@
     },
     {
       "path": "next.config.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 443
     },
     {
       "path": "package-lock.json",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "json",
       "size": 458978
     },
     {
       "path": "package.json",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "json",
       "size": 1061
+    },
+    {
+      "path": "src/app/api/sessions/[sessionId]/buzz/route.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 2446
     },
     {
       "path": "src/app/globals.css",
@@ -202,13 +208,13 @@
     },
     {
       "path": "src/db/index.ts",
-      "reason": "new",
+      "reason": "changed",
       "language": "typescript",
-      "size": 1132
+      "size": 1201
     },
     {
       "path": "src/db/schema.ts",
-      "reason": "new",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 3036
     },
@@ -217,6 +223,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 4614
+    },
+    {
+      "path": "src/lib/ccl/api.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 1937
     },
     {
       "path": "src/lib/ccl/types.ts",
@@ -235,6 +247,12 @@
       "reason": "needs_summary",
       "language": "typescript",
       "size": 24
+    },
+    {
+      "path": "src/server/buzz.ts",
+      "reason": "new",
+      "language": "typescript",
+      "size": 3309
     },
     {
       "path": "tsconfig.json",
