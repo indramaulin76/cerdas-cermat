@@ -1,6 +1,6 @@
 {
   "repo": "CCL",
-  "generatedForCommit": "a82996d93d05966cad7876439a67f00fa35e9416",
+  "generatedForCommit": "808c316ad7825f99fa484a4e9b7a87037795ae25",
   "files": [
     {
       "path": ".gitignore",
@@ -93,6 +93,12 @@
       "size": 3124
     },
     {
+      "path": "drizzle/0002_tired_kulan_gath.sql",
+      "reason": "new",
+      "language": "sql",
+      "size": 186
+    },
+    {
       "path": "drizzle/meta/0000_snapshot.json",
       "reason": "needs_summary",
       "language": "json",
@@ -105,10 +111,16 @@
       "size": 9541
     },
     {
-      "path": "drizzle/meta/_journal.json",
-      "reason": "needs_summary",
+      "path": "drizzle/meta/0002_snapshot.json",
+      "reason": "new",
       "language": "json",
-      "size": 343
+      "size": 10098
+    },
+    {
+      "path": "drizzle/meta/_journal.json",
+      "reason": "changed",
+      "language": "json",
+      "size": 487
     },
     {
       "path": "drizzle.config.ts",
@@ -142,7 +154,7 @@
     },
     {
       "path": "src/app/api/sessions/[sessionId]/buzz/route.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2857
     },
@@ -244,9 +256,9 @@
     },
     {
       "path": "src/db/schema.ts",
-      "reason": "needs_summary",
+      "reason": "changed",
       "language": "typescript",
-      "size": 5028
+      "size": 5281
     },
     {
       "path": "src/hooks/use-team-buzzer.ts",
@@ -256,7 +268,7 @@
     },
     {
       "path": "src/lib/ccl/api.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 4175
     },
@@ -280,7 +292,7 @@
     },
     {
       "path": "src/server/buzz.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 6075
     },
@@ -298,7 +310,7 @@
     },
     {
       "path": "src/server/status.ts",
-      "reason": "changed",
+      "reason": "needs_summary",
       "language": "typescript",
       "size": 2323
     },

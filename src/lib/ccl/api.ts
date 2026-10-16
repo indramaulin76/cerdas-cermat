@@ -121,6 +121,23 @@ export function eventsPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/events`;
 }
 
+/** Permintaan masuk sebagai moderator memakai PIN. */
+export type ModeratorAuthRequest = {
+  pin: string;
+};
+
+/** Balasan endpoint auth moderator. */
+export type ModeratorAuthResponse = {
+  ok: true;
+  /** `true` bila permintaan ini terautentikasi sebagai moderator. */
+  authenticated: boolean;
+};
+
+/** Endpoint autentikasi PIN moderator sebuah sesi. */
+export function moderatorAuthPath(sessionId: string): string {
+  return `/api/sessions/${encodeURIComponent(sessionId)}/auth/moderator`;
+}
+
 /** Endpoint membuka soal (membuka ronde baru). */
 export function openRoundPath(sessionId: string): string {
   return `/api/sessions/${encodeURIComponent(sessionId)}/rounds/open`;

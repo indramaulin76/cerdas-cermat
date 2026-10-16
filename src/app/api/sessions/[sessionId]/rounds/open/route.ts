@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import type { OpenRoundResponse, ApiErrorResponse } from "@/lib/ccl/api";
+import { requireModerator } from "@/server/auth";
 import { publish } from "@/server/events";
 import { openRound, toRoundDto } from "@/server/round";
 
@@ -18,6 +19,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   if (!sessionId) {
     return errorResponse("invalid_session", "Session id wajib diisi.", 400);
+  }
+
+  // Aksi khusus moderator: bila sesi ber-PIN, cookie moderator wajib ada.
+  const gate = await requireModerator(sessionId);
+  if (!gate.ok) {
+    return errorResponse(gate.error, gate.message, gate.status);
   }
 
   const outcome = openRound({ sessionId });
