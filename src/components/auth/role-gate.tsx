@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import { ROLE_INFO, type RoleId } from "@/lib/ccl/roles";
-import { roleAuthPath } from "@/lib/ccl/api";
+import { readApiResponse, roleAuthPath } from "@/lib/ccl/api";
 
 type RoleSession = { sessionId: string };
 const RoleSessionContext = createContext<RoleSession | null>(null);
@@ -49,10 +49,10 @@ export function RoleGate({
     let active = true;
     fetch(roleAuthPath(sessionId, role), { credentials: "same-origin" })
       .then(async (response) => {
-        const result = (await response.json()) as {
+        const result = await readApiResponse<{
           authenticated?: boolean;
           message?: string;
-        };
+        }>(response, "Gagal memeriksa akses.");
         if (!response.ok) throw new Error(result.message ?? "Gagal memeriksa akses.");
         if (active) {
           setAuthenticated(result.authenticated === true);
@@ -87,10 +87,10 @@ export function RoleGate({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ pin }),
       });
-      const result = (await response.json()) as {
+      const result = await readApiResponse<{
         authenticated?: boolean;
         message?: string;
-      };
+      }>(response, "Gagal masuk.");
       if (!response.ok || result.authenticated !== true) {
         throw new Error(result.message ?? "PIN tidak cocok.");
       }

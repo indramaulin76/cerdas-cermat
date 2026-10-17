@@ -9,6 +9,7 @@ import {
   type SessionDto,
   type SessionEvent,
   type TeamDto,
+  readApiResponse,
 } from "@/lib/ccl/api";
 import type { RoleId } from "@/lib/ccl/roles";
 
@@ -193,11 +194,11 @@ export function useLiveSession(sessionId: string, role: RoleId) {
         credentials: "same-origin",
         signal: controller.signal,
       });
-      const result = (await response.json()) as {
+      const result = await readApiResponse<{
         ok?: boolean;
         tokenRequest?: unknown;
         message?: string;
-      };
+      }>(response, "Tidak dapat mengautentikasi realtime.");
       if (!response.ok || !isTokenRequest(result.tokenRequest)) {
         throw new Error(result.message ?? "Tidak dapat mengautentikasi realtime.");
       }
@@ -269,11 +270,11 @@ export function useLiveSession(sessionId: string, role: RoleId) {
           apiPath(sessionId, "realtime-state", audience),
           { credentials: "same-origin", signal: controller.signal },
         );
-        const result = (await response.json()) as {
+        const result = await readApiResponse<{
           ok?: boolean;
           snapshot?: unknown;
           message?: string;
-        };
+        }>(response, "Tidak dapat memuat keadaan sesi.");
         if (!response.ok || !result.snapshot) {
           throw new Error(result.message ?? "Tidak dapat memuat keadaan sesi.");
         }

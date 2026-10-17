@@ -8,7 +8,7 @@ import { CalendarDays, ChevronRight, Plus, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SESSION_STATUS_CLASS, SESSION_STATUS_LABEL } from "@/lib/ccl/session-status";
 import type { SessionSummaryDto } from "@/lib/ccl/api";
-import { sessionsPath } from "@/lib/ccl/api";
+import { readApiResponse, sessionsPath } from "@/lib/ccl/api";
 import { formatSessionDate } from "@/lib/ccl/format";
 
 export function SessionList() {
@@ -24,10 +24,10 @@ export function SessionList() {
     let active = true;
     fetch(sessionsPath(), { credentials: "same-origin" })
       .then(async (response) => {
-        const result = (await response.json()) as {
+        const result = await readApiResponse<{
           sessions?: SessionSummaryDto[];
           message?: string;
-        };
+        }>(response, "Gagal memuat daftar sesi.");
         if (!response.ok) throw new Error(result.message ?? "Gagal memuat daftar sesi.");
         if (active) setSessions(result.sessions ?? []);
       })
@@ -53,10 +53,10 @@ export function SessionList() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ title }),
       });
-      const result = (await response.json()) as {
+      const result = await readApiResponse<{
         session?: { id: string };
         message?: string;
-      };
+      }>(response, "Gagal membuat sesi.");
       if (!response.ok || !result.session) {
         throw new Error(result.message ?? "Gagal membuat sesi.");
       }

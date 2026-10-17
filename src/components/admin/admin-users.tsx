@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import type { AdminUserDto } from "@/lib/ccl/api";
-import { adminUsersPath } from "@/lib/ccl/api";
+import { adminUsersPath, readApiResponse } from "@/lib/ccl/api";
 
 export function AdminUsers() {
   const [users, setUsers] = useState<AdminUserDto[]>([]);
@@ -18,10 +18,10 @@ export function AdminUsers() {
 
   async function load() {
     const response = await fetch(adminUsersPath(), { credentials: "same-origin" });
-    const result = (await response.json()) as {
+    const result = await readApiResponse<{
       users?: AdminUserDto[];
       message?: string;
-    };
+    }>(response, "Gagal memuat akun panitia.");
     if (!response.ok) throw new Error(result.message ?? "Gagal memuat akun panitia.");
     setUsers(result.users ?? []);
   }
@@ -30,10 +30,10 @@ export function AdminUsers() {
     let active = true;
     fetch(adminUsersPath(), { credentials: "same-origin" })
       .then(async (response) => {
-        const result = (await response.json()) as {
+        const result = await readApiResponse<{
           users?: AdminUserDto[];
           message?: string;
-        };
+        }>(response, "Gagal memuat akun.");
         if (!response.ok) throw new Error(result.message ?? "Gagal memuat akun.");
         if (active) setUsers(result.users ?? []);
       })
@@ -71,7 +71,10 @@ export function AdminUsers() {
           ...(password ? { password } : {}),
         }),
       });
-      const result = (await response.json()) as { message?: string };
+      const result = await readApiResponse<{ message?: string }>(
+        response,
+        "Gagal menyimpan akun.",
+      );
       if (!response.ok) throw new Error(result.message ?? "Gagal menyimpan akun.");
       await load();
       resetForm();
@@ -89,7 +92,10 @@ export function AdminUsers() {
         method: "DELETE",
         credentials: "same-origin",
       });
-      const result = (await response.json()) as { message?: string };
+      const result = await readApiResponse<{ message?: string }>(
+        response,
+        "Gagal menghapus akun.",
+      );
       if (!response.ok) throw new Error(result.message ?? "Gagal menghapus akun.");
       await load();
       setNotice("Akses akun dicabut.");

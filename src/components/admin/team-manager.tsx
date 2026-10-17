@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TEAM_COLORS } from "@/lib/ccl/team-colors";
 import type { Team } from "@/lib/ccl/types";
-import { teamPath, teamsPath } from "@/lib/ccl/api";
+import { readApiResponse, teamPath, teamsPath } from "@/lib/ccl/api";
 
 /**
  * Halaman kelola regu (dipakai admin sebelum lomba dimulai).
@@ -68,10 +68,10 @@ export function TeamManager({
     const response = await fetch(teamsPath(sessionId), {
       credentials: "same-origin",
     });
-    const result = (await response.json()) as {
+    const result = await readApiResponse<{
       teams?: Array<Team & { sessionId: string; createdAt: string }>;
       message?: string;
-    };
+    }>(response, "Gagal memuat regu.");
     if (!response.ok) throw new Error(result.message ?? "Gagal memuat regu.");
     setTeams((result.teams ?? []).map(({ id, name, color, score }) => ({
       id,
@@ -85,10 +85,10 @@ export function TeamManager({
     let active = true;
     fetch(teamsPath(sessionId), { credentials: "same-origin" })
       .then(async (response) => {
-        const result = (await response.json()) as {
+        const result = await readApiResponse<{
           teams?: Array<Team & { sessionId: string; createdAt: string }>;
           message?: string;
-        };
+        }>(response, "Gagal memuat regu.");
         if (!response.ok) throw new Error(result.message ?? "Gagal memuat regu.");
         if (active) {
           setTeams((result.teams ?? []).map(({ id, name, color, score }) => ({
@@ -123,7 +123,10 @@ export function TeamManager({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name: nextTeamName(teams) }),
       });
-      const result = (await response.json()) as { message?: string };
+      const result = await readApiResponse<{ message?: string }>(
+        response,
+        "Gagal menambah regu.",
+      );
       if (!response.ok) throw new Error(result.message ?? "Gagal menambah regu.");
       await loadTeams();
     } catch (reason) {
@@ -141,7 +144,10 @@ export function TeamManager({
         method: "DELETE",
         credentials: "same-origin",
       });
-      const result = (await response.json()) as { message?: string };
+      const result = await readApiResponse<{ message?: string }>(
+        response,
+        "Gagal menghapus regu.",
+      );
       if (!response.ok) throw new Error(result.message ?? "Gagal menghapus regu.");
       setOpenColorId((open) => (open === id ? null : open));
       await loadTeams();
@@ -164,7 +170,10 @@ export function TeamManager({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(patch),
       });
-      const result = (await response.json()) as { message?: string };
+      const result = await readApiResponse<{ message?: string }>(
+        response,
+        "Gagal menyimpan identitas regu.",
+      );
       if (!response.ok) throw new Error(result.message ?? "Gagal menyimpan identitas regu.");
       await loadTeams();
     } catch (reason) {

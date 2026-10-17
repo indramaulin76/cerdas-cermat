@@ -65,9 +65,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const session = toSessionDetailDto(await createSession({ title: trimmed }));
-  const response: CreateSessionResponse = { ok: true, session };
-  return NextResponse.json(response, { status: 201 });
+  try {
+    const session = toSessionDetailDto(await createSession({ title: trimmed }));
+    const response: CreateSessionResponse = { ok: true, session };
+    return NextResponse.json(response, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create session:", error);
+    return errorResponse(
+      "session_create_failed",
+      "Gagal membuat sesi. Periksa konfigurasi database dan log deployment.",
+      500,
+    );
+  }
 }
 
 /**
@@ -84,6 +93,18 @@ export async function GET() {
     return errorResponse(gate.error, gate.message, gate.status);
   }
 
-  const response: SessionsListResponse = { ok: true, sessions: await listSessions() };
-  return NextResponse.json(response);
+  try {
+    const response: SessionsListResponse = {
+      ok: true,
+      sessions: await listSessions(),
+    };
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error("Failed to list sessions:", error);
+    return errorResponse(
+      "sessions_list_failed",
+      "Gagal memuat sesi. Periksa konfigurasi database dan log deployment.",
+      500,
+    );
+  }
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { SettingsForm } from "@/components/admin/settings-form";
 import type { SessionDetailDto, SessionSummaryDto } from "@/lib/ccl/api";
-import { sessionDetailPath, sessionsPath } from "@/lib/ccl/api";
+import { readApiResponse, sessionDetailPath, sessionsPath } from "@/lib/ccl/api";
 
 export function SettingsPage() {
   const [sessions, setSessions] = useState<SessionSummaryDto[]>([]);
@@ -16,10 +16,10 @@ export function SettingsPage() {
     let active = true;
     fetch(sessionsPath(), { credentials: "same-origin" })
       .then(async (response) => {
-        const result = (await response.json()) as {
+        const result = await readApiResponse<{
           sessions?: SessionSummaryDto[];
           message?: string;
-        };
+        }>(response, "Gagal memuat sesi.");
         if (!response.ok) throw new Error(result.message ?? "Gagal memuat sesi.");
         if (!active) return;
         const items = result.sessions ?? [];
@@ -40,10 +40,10 @@ export function SettingsPage() {
     let active = true;
     fetch(sessionDetailPath(selectedId), { credentials: "same-origin" })
       .then(async (response) => {
-        const result = (await response.json()) as {
+        const result = await readApiResponse<{
           session?: SessionDetailDto;
           message?: string;
-        };
+        }>(response, "Gagal memuat pengaturan sesi.");
         if (!response.ok || !result.session) {
           throw new Error(result.message ?? "Gagal memuat pengaturan sesi.");
         }

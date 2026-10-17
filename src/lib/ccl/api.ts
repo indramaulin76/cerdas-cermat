@@ -51,6 +51,27 @@ export type ApiErrorResponse = {
   message?: string;
 };
 
+/** Baca JSON API dan tampilkan pesan yang dapat dipahami bila server gagal. */
+export async function readApiResponse<T>(
+  response: Response,
+  fallbackMessage: string,
+): Promise<T> {
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(
+      `${fallbackMessage} Server mengembalikan respons kosong atau bukan JSON (HTTP ${response.status}). Periksa koneksi database dan log deployment.`,
+    );
+  }
+  if (typeof payload !== "object" || payload === null) {
+    throw new Error(
+      `${fallbackMessage} Respons server tidak valid (HTTP ${response.status}).`,
+    );
+  }
+  return payload as T;
+}
+
 /**
  * Sorotan regu tercepat di layar penonton.
  *

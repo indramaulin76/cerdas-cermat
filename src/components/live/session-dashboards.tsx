@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLiveSession } from "@/hooks/use-live-session";
 import { useRoleSession } from "@/components/auth/role-gate";
-import { roleAuthPath, type TeamDto } from "@/lib/ccl/api";
+import { readApiResponse, roleAuthPath, type TeamDto } from "@/lib/ccl/api";
 import type { RoleId } from "@/lib/ccl/roles";
 
 function useClock() {
@@ -38,7 +38,10 @@ function useActionError() {
               body: JSON.stringify(body),
             }),
       });
-      const result = (await response.json()) as { message?: string };
+      const result = await readApiResponse<{ message?: string }>(
+        response,
+        "Permintaan gagal.",
+      );
       if (!response.ok) throw new Error(result.message ?? "Permintaan gagal.");
       return true;
     } catch (reason) {
@@ -361,7 +364,10 @@ export function LiveTeamDashboard() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ teamId: team.id, roundId: live.round.id }),
       });
-      const result = (await response.json()) as { message?: string };
+      const result = await readApiResponse<{ message?: string }>(
+        response,
+        "Tekanan tidak tercatat.",
+      );
       if (!response.ok) throw new Error(result.message ?? "Tekanan tidak tercatat.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Tekanan tidak tercatat.");

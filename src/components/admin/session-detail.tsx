@@ -19,7 +19,7 @@ import { SettingsForm } from "@/components/admin/settings-form";
 import { TeamManager } from "@/components/admin/team-manager";
 import { Button } from "@/components/ui/button";
 import type { SessionDetailDto, TeamDto } from "@/lib/ccl/api";
-import { sessionDetailPath, teamsPath } from "@/lib/ccl/api";
+import { readApiResponse, sessionDetailPath, teamsPath } from "@/lib/ccl/api";
 import { ROLE_INFO, ROLE_ORDER, type RoleId } from "@/lib/ccl/roles";
 import { formatSessionDate } from "@/lib/ccl/format";
 import { SESSION_STATUS_CLASS, SESSION_STATUS_LABEL } from "@/lib/ccl/session-status";
@@ -49,14 +49,14 @@ export function SessionDetail({ sessionId }: { sessionId: string }) {
       fetch(teamsPath(sessionId), { credentials: "same-origin" }),
     ])
       .then(async ([sessionResponse, teamsResponse]) => {
-        const sessionResult = (await sessionResponse.json()) as {
+        const sessionResult = await readApiResponse<{
           session?: SessionDetailDto;
           message?: string;
-        };
-        const teamsResult = (await teamsResponse.json()) as {
+        }>(sessionResponse, "Gagal memuat sesi.");
+        const teamsResult = await readApiResponse<{
           teams?: TeamDto[];
           message?: string;
-        };
+        }>(teamsResponse, "Gagal memuat regu.");
         if (!sessionResponse.ok) throw new Error(sessionResult.message ?? "Gagal memuat sesi.");
         if (!teamsResponse.ok) throw new Error(teamsResult.message ?? "Gagal memuat regu.");
         if (active) {
@@ -85,7 +85,10 @@ export function SessionDetail({ sessionId }: { sessionId: string }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      const result = (await response.json()) as { session?: SessionDetailDto; message?: string };
+      const result = await readApiResponse<{
+        session?: SessionDetailDto;
+        message?: string;
+      }>(response, "Gagal mengubah status sesi.");
       if (!response.ok || !result.session) throw new Error(result.message ?? "Gagal mengubah status sesi.");
       setSession(result.session);
       setNotice("Status sesi diperbarui.");

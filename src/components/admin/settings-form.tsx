@@ -14,7 +14,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SETTINGS_LIMITS, type CompetitionSettings } from "@/lib/ccl/settings";
-import { settingsPath, type UpdateSettingsResponse } from "@/lib/ccl/api";
+import {
+  readApiResponse,
+  settingsPath,
+  type UpdateSettingsResponse,
+} from "@/lib/ccl/api";
 
 /**
  * Form pengaturan lomba (admin).
@@ -180,9 +184,9 @@ export function SettingsForm({
       body: JSON.stringify({ cooldownSeconds: nextCooldown }),
     })
       .then(async (response) => {
-        const result = (await response.json()) as UpdateSettingsResponse | {
+        const result = await readApiResponse<UpdateSettingsResponse | {
           message?: string;
-        };
+        }>(response, "Gagal menyimpan pengaturan.");
         if (!response.ok || !("session" in result)) {
           throw new Error(
             ("message" in result ? result.message : undefined) ??
